@@ -1,7 +1,31 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { sql, poolPromise } = require('./db');
+
+// ── Upload de Fotos ──────────────────────────────────────────
+const uploadStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    const dir = path.join(__dirname, 'uploads', 'projectos', String(req.params.id));
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `foto_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+  }
+});
+const uploadFotos = multer({
+  storage: uploadStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter(req, file, cb) {
+    if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Apenas imagens são permitidas (JPEG, PNG, WebP, GIF).'));
+  }
+});
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
@@ -1238,6 +1262,114 @@ router.delete('/projectos/:id', authMiddleware, requireLevel('super_admin'), asy
     await logAction(req.admin.id, 'ELIMINAR', 'projecto', parseInt(id), `Projecto eliminado`, req.ip);
 
     res.json({ success: true, message: 'Projecto eliminado.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+//  FOTOS DE PROJECTOS
+// ════════════════════════════════════════════════════════════
+
+// Garante que a tabela projecto_fotos existe
+async function ensureFotosTable() {
+  try {
+    const pool = await poolPromise;
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'projecto_fotos')
+      CREATE TABLE projecto_fotos (
+        id           INT IDENTITY(1,1) PRIMARY KEY,
+        projecto_id  INT NOT NULL,
+        filename     NVARCHAR(255) NOT NULL,
+        url_path     NVARCHAR(500) NOT NULL,
+        ordem        INT DEFAULT 0,
+        criado_em    DATETIME2 DEFAULT GETDATE(),
+        CONSTRAINT fk_projecto_fotos FOREIGN KEY (projecto_id) REFERENCES projectos(id) ON DELETE CASCADE
+      )
+    `);
+  } catch (_) {}
+}
+ensureFotosTable();
+
+// GET /api/admin/projectos/:id/fotos
+router.get('/projectos/:id/fotos', authMiddleware, async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .query('SELECT * FROM projecto_fotos WHERE projecto_id = @id ORDER BY ordem, id');
+    res.json({ fotos: result.recordset });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/projectos/:id/fotos  (até 10 ficheiros por pedido)
+router.post('/projectos/:id/fotos', authMiddleware, requireLevel('admin', 'super_admin'), (req, res, next) => {
+  uploadFotos.array('fotos', 10)(req, res, err => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
+  if (!req.files || req.files.length === 0)
+    return res.status(400).json({ error: 'Nenhum ficheiro enviado.' });
+
+  try {
+    const pool = await poolPromise;
+
+    // Verificar quantas fotos já existem
+    const countResult = await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .query('SELECT COUNT(*) AS total FROM projecto_fotos WHERE projecto_id = @id');
+    const existing = countResult.recordset[0].total;
+
+    if (existing + req.files.length > 10) {
+      // Apagar ficheiros recém-enviados pois ultrapassaria o limite
+      req.files.forEach(f => fs.unlink(f.path, () => {}));
+      return res.status(400).json({ error: `Limite de 10 fotos excedido. Já existem ${existing} fotos.` });
+    }
+
+    const inserted = [];
+    for (const file of req.files) {
+      const urlPath = `/uploads/projectos/${req.params.id}/${file.filename}`;
+      const r = await pool.request()
+        .input('projecto_id', sql.Int, req.params.id)
+        .input('filename', sql.NVarChar, file.filename)
+        .input('url_path', sql.NVarChar, urlPath)
+        .query('INSERT INTO projecto_fotos (projecto_id, filename, url_path) OUTPUT INSERTED.* VALUES (@projecto_id, @filename, @url_path)');
+      inserted.push(r.recordset[0]);
+    }
+
+    await logAction(req.admin.id, 'UPLOAD', 'projecto_fotos', parseInt(req.params.id), `${req.files.length} foto(s) adicionada(s)`, req.ip);
+    res.status(201).json({ success: true, fotos: inserted });
+  } catch (err) {
+    req.files.forEach(f => fs.unlink(f.path, () => {}));
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/projectos/:id/fotos/:fotoId
+router.delete('/projectos/:id/fotos/:fotoId', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .input('fotoId', sql.Int, req.params.fotoId)
+      .query('SELECT * FROM projecto_fotos WHERE id = @fotoId AND projecto_id = @id');
+
+    if (result.recordset.length === 0)
+      return res.status(404).json({ error: 'Foto não encontrada.' });
+
+    const foto = result.recordset[0];
+    const filePath = path.join(__dirname, 'uploads', 'projectos', String(req.params.id), foto.filename);
+    fs.unlink(filePath, () => {});
+
+    await pool.request()
+      .input('fotoId', sql.Int, req.params.fotoId)
+      .query('DELETE FROM projecto_fotos WHERE id = @fotoId');
+
+    await logAction(req.admin.id, 'ELIMINAR', 'projecto_fotos', parseInt(req.params.fotoId), `Foto eliminada do projecto ${req.params.id}`, req.ip);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

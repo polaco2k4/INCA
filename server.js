@@ -1070,6 +1070,7 @@ app.get('/api/projectos/estatisticas', async (req, res) => {
 });
 
 // ── Serve static files ───────────────────────────────────────
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
 
 // ── Catch-all → devolve o HTML ────────────────────────────────
