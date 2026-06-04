@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal do Produtor — INCA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --espresso:   #1A0A00;
+    --roast:      #3B1A08;
+    --mahogany:   #6B3520;
+    --gold:       #C49A3C;
+    --cream:      #F5EFE0;
+    --parchment:  #EDE4CC;
+    --ivory:      #FAF7F0;
+    --moss:       #2C4A2E;
+    --sage:       #5A7A5C;
+    --slate:      #3D3D3D;
+    --mid:        #7A7A72;
+    --light-rule: rgba(100,70,40,.12);
+    --serif: 'Playfair Display', Georgia, serif;
+    --body:  'Libre Baskerville', Georgia, serif;
+    --sans:  'Source Sans 3', sans-serif;
+    --transition: .35s cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    background: var(--ivory);
+    color: var(--espresso);
+    font-family: var(--body);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .portal-header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(26,10,0,.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(196,154,60,.25);
+    padding: 0 4vw;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .portal-logo {
+    display: flex; align-items: center; gap: 14px; text-decoration: none;
+  }
+
+  .portal-logo-emblem {
+    width: 40px; height: 40px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .portal-logo-text {
+    line-height: 1.2;
+  }
+
+  .portal-logo-text .abbr {
+    display: block;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: .08em;
+  }
+
+  .portal-logo-text .full {
+    display: block;
+    font-family: var(--sans);
+    font-size: .6rem;
+    color: rgba(245,239,224,.6);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .portal-user {
+    display: flex; align-items: center; gap: 1rem;
+  }
+
+  .user-avatar {
+    width: 36px; height: 36px;
+    background: var(--mahogany);
+    border-radius: 50%;
+    display: flex; align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: var(--cream);
+  }
+
+  .user-info {
+    text-align: right;
+  }
+
+  .user-name {
+    font-family: var(--sans);
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--cream);
+  }
+
+  .user-nbi {
+    font-family: var(--sans);
+    font-size: .65rem;
+    color: rgba(245,239,224,.6);
+  }
+
+  .logout-btn {
+    background: none;
+    border: 1px solid rgba(196,154,60,.4);
+    color: var(--gold);
+    padding: .4rem .8rem;
+    font-family: var(--sans);
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: var(--transition);
+  }
+
+  .logout-btn:hover {
+    background: var(--gold);
+    color: var(--espresso);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .portal-container {
+    margin-top: 70px;
+    min-height: calc(100vh - 70px);
+    display: flex;
+  }
+
+  .portal-sidebar {
+    width: 260px;
+    background: var(--cream);
+    border-right: 1px solid var(--light-rule);
+    padding: 2rem 0;
+    position: fixed;
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+  }
+
+  .portal-main {
+    flex: 1;
+    margin-left: 260px;
+    padding: 2rem 4vw;
+  }
+
+  /* ── SIDEBAR NAV ── */
+  .sidebar-nav {
+    list-style: none;
+  }
+
+  .sidebar-item {
+    margin-bottom: .5rem;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    padding: .8rem 1.5rem;
+    color: var(--slate);
+    text-decoration: none;
+    font-family: var(--sans);
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    transition: var(--transition);
+    border-left: 3px solid transparent;
+  }
+
+  .sidebar-link:hover {
+    background: var(--parchment);
+    color: var(--roast);
+  }
+
+  .sidebar-link.active {
+    background: var(--ivory);
+    color: var(--mahogany);
+    border-left-color: var(--gold);
+  }
+
+  .sidebar-icon {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+  }
+
+  /* ── DASHBOARD ── */
+  .dashboard-welcome {
+    margin-bottom: 2rem;
+  }
+
+  .welcome-title {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--espresso);
+    margin-bottom: .5rem;
+  }
+
+  .welcome-subtitle {
+    font-family: var(--sans);
+    font-size: 1rem;
+    color: var(--mid);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    border: 1px solid var(--light-rule);
+    border-radius: 4px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: var(--transition);
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    transform: translateY(-2px);
+  }
+
+  .stat-value {
+    font-family: var(--serif);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--gold);
+    display: block;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: var(--sans);
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-top: .5rem;
+  }
+
+  /* ── SECTIONS ── */
+  .content-section {
+    display: none;
+    animation: fadeIn .3s ease;
+  }
+
+  .content-section.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--light-rule);
+  }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--espresso);
+    margin-bottom: .5rem;
+  }
+
+  .section-subtitle {
+    font-family: var(--sans);
+    font-size: 1rem;
+    color: var(--mid);
+  }
+
+  /* ── CARDS ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid var(--light-rule);
+    border-radius: 4px;
+    padding: 1.5rem;
+    transition: var(--transition);
+  }
+
+  .card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,.1);
+    transform: translateY(-3px);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--espresso);
+    line-height: 1.3;
+  }
+
+  .card-status {
+    padding: .25rem .6rem;
+    border-radius: 12px;
+    font-family: var(--sans);
+    font-size: .65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .status-pendente {
+    background: rgba(255,193,7,.1);
+    color: #856404;
+  }
+
+  .status-aprovado {
+    background: rgba(40,167,69,.1);
+    color: #155724;
+  }
+
+  .status-rejeitado {
+    background: rgba(220,53,69,.1);
+    color: #721c24;
+  }
+
+  .status-em_analise {
+    background: rgba(23,162,184,.1);
+    color: #0c5460;
+  }
+
+  .status-emitido {
+    background: rgba(40,167,69,.1);
+    color: #155724;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--light-rule);
+    font-family: var(--sans);
+    font-size: .8rem;
+    color: var(--mid);
+  }
+
+  .card-meta-item {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+  }
+
+  /* ── FORMS ── */
+  .form-container {
+    background: white;
+    border: 1px solid var(--light-rule);
+    border-radius: 4px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .form-title {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--espresso);
+    margin-bottom: 1.5rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-family: var(--sans);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--mahogany);
+    margin-bottom: .5rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: .8rem 1rem;
+    background: var(--cream);
+    border: 1px solid rgba(100,70,40,.15);
+    border-radius: 2px;
+    font-family: var(--body);
+    font-size: .9rem;
+    color: var(--espresso);
+    outline: none;
+    transition: var(--transition);
+  }
+
+  .form-control:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(196,154,60,.1);
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .8rem 1.5rem;
+    border: none;
+    border-radius: 2px;
+    font-family: var(--sans);
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--espresso);
+  }
+
+  .btn-primary:hover {
+    background: #d4aa4c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(196,154,60,.3);
+  }
+
+  .btn-secondary {
+    background: var(--mid);
+    color: var(--cream);
+  }
+
+  .btn-secondary:hover {
+    background: var(--slate);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--mid);
+    color: var(--mid);
+  }
+
+  .btn-outline:hover {
+    background: var(--mid);
+    color: var(--cream);
+  }
+
+  .btn-danger {
+    background: #dc3545;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #c82333;
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  /* ── TABLES ── */
+  .table-container {
+    background: white;
+    border: 1px solid var(--light-rule);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .table-header {
+    background: var(--cream);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--light-rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .table-title {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--espresso);
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    background: var(--parchment);
+    padding: 1rem;
+    text-align: left;
+    font-family: var(--sans);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--mahogany);
+    border-bottom: 2px solid var(--light-rule);
+  }
+
+  td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--light-rule);
+    font-family: var(--body);
+    font-size: .9rem;
+    color: var(--slate);
+  }
+
+  tr:hover {
+    background: var(--ivory);
+  }
+
+  /* ── ALERTS ── */
+  .alert {
+    padding: 1rem 1.5rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    border: 1px solid;
+  }
+
+  .alert-success {
+    background: rgba(40,167,69,.1);
+    border-color: rgba(40,167,69,.3);
+    color: #155724;
+  }
+
+  .alert-warning {
+    background: rgba(255,193,7,.1);
+    border-color: rgba(255,193,7,.3);
+    color: #856404;
+  }
+
+  .alert-error {
+    background: rgba(220,53,69,.1);
+    border-color: rgba(220,53,69,.3);
+    color: #721c24;
+  }
+
+  .alert-info {
+    background: rgba(23,162,184,.1);
+    border-color: rgba(23,162,184,.3);
+    color: #0c5460;
+  }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(26,10,0,.82);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease;
+  }
+
+  .modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal-box {
+    background: var(--ivory);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 24px 80px rgba(26,10,0,.4);
+    transform: translateY(18px);
+    transition: transform .3s ease;
+  }
+
+  .modal-overlay.active .modal-box {
+    transform: translateY(0);
+  }
+
+  .modal-header {
+    background: var(--espresso);
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid rgba(196,154,60,.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .modal-title {
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--cream);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(245,239,224,.4);
+    font-size: 1.3rem;
+    line-height: 1;
+    padding: 2px 6px;
+    transition: color var(--transition);
+  }
+
+  .modal-close:hover {
+    color: var(--gold);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  /* ── LOADING ── */
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--light-rule);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .portal-sidebar {
+      transform: translateX(-100%);
+      transition: transform .3s ease;
+    }
+
+    .portal-sidebar.open {
+      transform: translateX(0);
+    }
+
+    .portal-main {
+      margin-left: 0;
+      padding: 1rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cards-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .btn-group {
+      flex-direction: column;
+    }
+
+    .table-wrapper {
+      font-size: .8rem;
+    }
+
+    th, td {
+      padding: .5rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="portal-header">
+    <a href="#" class="portal-logo">
+      <div class="portal-logo-emblem">☕</div>
+      <div class="portal-logo-text">
+        <span class="abbr">INCA</span>
+        <span class="full">Instituto Nacional do Café de Angola</span>
+      </div>
+    </a>
+    <div class="portal-user">
+      <div class="user-info">
+        <div class="user-name" id="userName">Carregando...</div>
+        <div class="user-nbi" id="userNBI">...</div>
+      </div>
+      <div class="user-avatar" id="userAvatar">👤</div>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="portal-container">
+    <!-- Sidebar -->
+    <nav class="portal-sidebar" id="sidebar">
+      <ul class="sidebar-nav">
+        <li class="sidebar-item">
+          <a href="#" class="sidebar-link active" data-section="dashboard" onclick="showSection('dashboard', this)">
+            <span class="sidebar-icon">🏠</span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#" class="sidebar-link" data-section="dados" onclick="showSection('dados', this)">
+            <span class="sidebar-icon">👤</span>
+            <span>Meus Dados</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#" class="sidebar-link" data-section="parcelas" onclick="showSection('parcelas', this)">
+            <span class="sidebar-icon">🌾</span>
+            <span>Parcelas</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#" class="sidebar-link" data-section="lotes" onclick="showSection('lotes', this)">
+            <span class="sidebar-icon">📦</span>
+            <span>Lotes</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#" class="sidebar-link" data-section="certificados" onclick="showSection('certificados', this)">
+            <span class="sidebar-icon">📄</span>
+            <span>Certificados</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#" class="sidebar-link" data-section="apoios" onclick="showSection('apoios', this)">
+            <span class="sidebar-icon">💰</span>
+            <span>Pedidos de Apoio</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#" class="sidebar-link" data-section="rastreio" onclick="showSection('rastreio', this)">
+            <span class="sidebar-icon">🔍</span>
+            <span>Rastreio</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="portal-main">
+      <!-- Dashboard Section -->
+      <section id="dashboard" class="content-section active">
+        <div class="dashboard-welcome">
+          <h1 class="welcome-title">Bem-vindo, <span id="welcomeName">Produtor</span>!</h1>
+          <p class="welcome-subtitle">Aqui está o resumo das suas atividades no portal INCA</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-value" id="statParcelas">0</span>
+            <div class="stat-label">Parcelas</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="statLotes">0</span>
+            <div class="stat-label">Lotes Activos</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="statCertPendentes">0</span>
+            <div class="stat-label">Certificados Pendentes</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="statApoios">0</span>
+            <div class="stat-label">Pedidos de Apoio</div>
+          </div>
+        </div>
+
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Actividades Recentes</h3>
+            </div>
+            <div id="recentActivities">
+              <p style="color: var(--mid); text-align: center; padding: 2rem;">Carregando actividades...</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Próximos Passos</h3>
+            </div>
+            <div id="nextSteps">
+              <p style="color: var(--mid); text-align: center; padding: 2rem;">Carregando próximos passos...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Meus Dados Section -->
+      <section id="dados" class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">Meus Dados Pessoais</h2>
+          <p class="section-subtitle">Actualize as suas informações de contacto e perfil</p>
+        </div>
+
+        <div class="form-container">
+          <h3 class="form-title">Informações Pessoais</h3>
+          <form id="dadosForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Nome Completo</label>
+                <input type="text" class="form-control" id="nome" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">NBI</label>
+                <input type="text" class="form-control" id="nbi" readonly>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Telefone</label>
+                <input type="tel" class="form-control" id="telefone">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="email">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Província</label>
+                <input type="text" class="form-control" id="provincia">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Município</label>
+                <input type="text" class="form-control" id="municipio">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fileira</label>
+                <select class="form-control" id="fileira">
+                  <option value="">Selecione...</option>
+                  <option value="Café">Café</option>
+                  <option value="Cacau">Cacau</option>
+                  <option value="Caju">Caju</option>
+                  <option value="Dendém">Dendém</option>
+                  <option value="Outra">Outra</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Área Total (ha)</label>
+                <input type="number" step="0.01" class="form-control" id="area_ha">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo de Produtor</label>
+                <select class="form-control" id="tipo_produtor">
+                  <option value="Individual / Familiar">Individual / Familiar</option>
+                  <option value="Cooperativa Agrícola">Cooperativa Agrícola</option>
+                  <option value="Empresa Agrícola">Empresa Agrícola</option>
+                  <option value="Associação">Associação</option>
+                </select>
+              </div>
+            </div>
+            <div class="btn-group">
+              <button type="submit" class="btn btn-primary">
+                <span>💾</span> Guardar Alterações
+              </button>
+              <button type="button" class="btn btn-outline" onclick="loadDados()">
+                <span>↺</span> Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Parcelas Section -->
+      <section id="parcelas" class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">Minhas Parcelas</h2>
+          <p class="section-subtitle">Gerencie as suas parcelas agrícolas</p>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">
+            <h3 class="table-title">Lista de Parcelas</h3>
+            <button class="btn btn-primary" onclick="openParcelaModal()">
+              <span>➕</span> Nova Parcela
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table id="parcelasTable">
+              <thead>
+                <tr>
+                  <th>Fileira</th>
+                  <th>Área (ha)</th>
+                  <th>Coordenadas</th>
+                  <th>Data de Registo</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 2rem; color: var(--mid);">
+                    Carregando parcelas...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lotes Section -->
+      <section id="lotes" class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">Meus Lotes</h2>
+          <p class="section-subtitle">Acompanhe o status dos seus lotes de produção</p>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">
+            <h3 class="table-title">Lista de Lotes</h3>
+            <button class="btn btn-primary" onclick="openLoteModal()">
+              <span>➕</span> Novo Lote
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table id="lotesTable">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Produto</th>
+                  <th>Quantidade (kg)</th>
+                  <th>Província</th>
+                  <th>Estado</th>
+                  <th>Data</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">
+                    Carregando lotes...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Certificados Section -->
+      <section id="certificados" class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">Meus Certificados</h2>
+          <p class="section-subtitle">Solicite e acompanhe certificados de origem</p>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">
+            <h3 class="table-title">Lista de Certificados</h3>
+            <button class="btn btn-primary" onclick="openCertificadoModal()">
+              <span>➕</span> Novo Certificado
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table id="certificadosTable">
+              <thead>
+                <tr>
+                  <th>Referência</th>
+                  <th>Produto</th>
+                  <th>Quantidade (kg)</th>
+                  <th>Destino</th>
+                  <th>Data Exportação</th>
+                  <th>Estado</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">
+                    Carregando certificados...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Apoios Section -->
+      <section id="apoios" class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">Meus Pedidos de Apoio</h2>
+          <p class="section-subtitle">Solicite apoio técnico e financeiro</p>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">
+            <h3 class="table-title">Lista de Pedidos</h3>
+            <button class="btn btn-primary" onclick="openApoioModal()">
+              <span>➕</span> Novo Pedido
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table id="apoiosTable">
+              <thead>
+                <tr>
+                  <th>Referência</th>
+                  <th>Tipo</th>
+                  <th>Fileira</th>
+                  <th>Valor Estimado</th>
+                  <th>Estado</th>
+                  <th>Data</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">
+                    Carregando pedidos...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rastreio Section -->
+      <section id="rastreio" class="content-section">
+        <div class="section-header">
+          <h2 class="section-title">Rastreabilidade</h2>
+          <p class="section-subtitle">Consulte o histórico de rastreio dos seus lotes</p>
+        </div>
+
+        <div class="form-container">
+          <h3 class="form-title">Consultar Lote</h3>
+          <form id="rastreioForm">
+            <div class="form-group">
+              <label class="form-label">Código do Lote</label>
+              <input type="text" class="form-control" id="rastreioCodigo" placeholder="Ex: CAFÉ-2026-047" required>
+            </div>
+            <div class="btn-group">
+              <button type="submit" class="btn btn-primary">
+                <span>🔍</span> Consultar
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="rastreioResult" style="display: none;">
+          <!-- Resultado será inserido aqui -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">Título</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Conteúdo do modal -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── GLOBAL STATE ──
+    let currentUser = null;
+    let currentSection = 'dashboard';
+
+    // ── INIT ──
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkAuth();
+      setupEventListeners();
+    });
+
+    // ── AUTHENTICATION ──
+    async function checkAuth() {
+      const token = localStorage.getItem('inca_token');
+      if (!token) {
+        window.location.href = '/instituto_cafe_angola.html';
+        return;
+      }
+
+      try {
+        // Simular validação do token (em produção, validar no backend)
+        const userData = JSON.parse(localStorage.getItem('inca_user'));
+        if (!userData) {
+          logout();
+          return;
+        }
+
+        currentUser = userData;
+        updateUserInfo();
+        await loadDashboardData();
+      } catch (error) {
+        console.error('Erro na autenticação:', error);
+        logout();
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('inca_token');
+      localStorage.removeItem('inca_user');
+      window.location.href = '/instituto_cafe_angola.html';
+    }
+
+    function updateUserInfo() {
+      if (!currentUser) return;
+
+      document.getElementById('userName').textContent = currentUser.nome;
+      document.getElementById('userNBI').textContent = currentUser.nbi;
+      document.getElementById('welcomeName').textContent = currentUser.nome.split(' ')[0];
+      document.getElementById('userAvatar').textContent = currentUser.nome.charAt(0).toUpperCase();
+    }
+
+    // ── NAVIGATION ──
+    function showSection(sectionId, linkElement) {
+      // Hide all sections
+      document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+      });
+
+      // Show selected section
+      document.getElementById(sectionId).classList.add('active');
+
+      // Update sidebar active state
+      document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      linkElement.classList.add('active');
+
+      currentSection = sectionId;
+
+      // Load section-specific data
+      loadSectionData(sectionId);
+    }
+
+    async function loadSectionData(sectionId) {
+      switch (sectionId) {
+        case 'dashboard':
+          await loadDashboardData();
+          break;
+        case 'dados':
+          await loadDados();
+          break;
+        case 'parcelas':
+          await loadParcelas();
+          break;
+        case 'lotes':
+          await loadLotes();
+          break;
+        case 'certificados':
+          await loadCertificados();
+          break;
+        case 'apoios':
+          await loadApoios();
+          break;
+      }
+    }
+
+    // ── API HELPERS ──
+    async function apiCall(endpoint, options = {}) {
+      const url = `/api${endpoint}`;
+      const defaultOptions = {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+
+      try {
+        const response = await fetch(url, { ...defaultOptions, ...options });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('API Error:', error);
+        showAlert('Erro de comunicação com o servidor. Tente novamente.', 'error');
+        throw error;
+      }
+    }
+
+    // ── DASHBOARD ──
+    async function loadDashboardData() {
+      try {
+        // Carregar estatísticas
+        const stats = currentUser.stats || {};
+        document.getElementById('statParcelas').textContent = stats.parcelas || 0;
+        document.getElementById('statLotes').textContent = stats.lotes || 0;
+        document.getElementById('statCertPendentes').textContent = stats.certPend || 0;
+        document.getElementById('statApoios').textContent = stats.pedAnali || 0;
+
+        // Carregar actividades recentes
+        await loadRecentActivities();
+        
+        // Carregar próximos passos
+        loadNextSteps();
+      } catch (error) {
+        console.error('Erro ao carregar dashboard:', error);
+      }
+    }
+
+    async function loadRecentActivities() {
+      const container = document.getElementById('recentActivities');
+      
+      try {
+        // Buscar lotes recentes
+        const lotesResponse = await apiCall(`/lotes?produtor_id=${currentUser.id}&limit=5`);
+        const lotes = lotesResponse.lotes || [];
+
+        // Buscar certificados recentes
+        const certificadosResponse = await apiCall(`/certificados?produtor_id=${currentUser.id}&limit=3`);
+        const certificados = certificadosResponse.certificados || [];
+
+        // Combinar e ordenar actividades
+        const activities = [];
+
+        lotes.forEach(lote => {
+          activities.push({
+            type: 'lote',
+            title: `Lote ${lote.codigo}`,
+            description: `${lote.quantidade_kg}kg de ${lote.produto}`,
+            date: new Date(lote.criado_em),
+            status: lote.estado
+          });
+        });
+
+        certificados.forEach(cert => {
+          activities.push({
+            type: 'certificado',
+            title: `Certificado ${cert.referencia}`,
+            description: `${cert.quantidade_kg}kg para ${cert.pais_destino}`,
+            date: new Date(cert.criado_em),
+            status: cert.estado
+          });
+        });
+
+        // Ordenar por data
+        activities.sort((a, b) => b.date - a.date);
+
+        // Renderizar
+        if (activities.length === 0) {
+          container.innerHTML = '<p style="color: var(--mid); text-align: center;">Nenhuma actividade recente</p>';
+        } else {
+          container.innerHTML = activities.slice(0, 5).map(activity => `
+            <div style="padding: .8rem 0; border-bottom: 1px solid var(--light-rule);">
+              <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                  <div style="font-weight: 600; color: var(--espresso); margin-bottom: .2rem;">
+                    ${activity.title}
+                  </div>
+                  <div style="font-size: .85rem; color: var(--mid);">
+                    ${activity.description}
+                  </div>
+                </div>
+                <span class="card-status status-${activity.status}">
+                  ${activity.status}
+                </span>
+              </div>
+              <div style="font-size: .75rem; color: var(--mid); margin-top: .5rem;">
+                ${formatDate(activity.date)}
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (error) {
+        container.innerHTML = '<p style="color: var(--mid); text-align: center;">Erro ao carregar actividades</p>';
+      }
+    }
+
+    function loadNextSteps() {
+      const container = document.getElementById('nextSteps');
+      const steps = [];
+
+      // Verificar se há certificados pendentes
+      if (currentUser.stats?.certPend > 0) {
+        steps.push({
+          icon: '📄',
+          title: 'Certificados Pendentes',
+          description: 'Você tem certificados aguardando aprovação',
+          action: () => showSection('certificados', document.querySelector('[data-section="certificados"]'))
+        });
+      }
+
+      // Verificar se há pedidos em análise
+      if (currentUser.stats?.pedAnali > 0) {
+        steps.push({
+          icon: '💰',
+          title: 'Pedidos em Análise',
+          description: 'Acompanhe o status dos seus pedidos de apoio',
+          action: () => showSection('apoios', document.querySelector('[data-section="apoios"]'))
+        });
+      }
+
+      // Sugerir adicionar parcelas se não houver
+      if (currentUser.stats?.parcelas === 0) {
+        steps.push({
+          icon: '🌾',
+          title: 'Registar Parcelas',
+          description: 'Adicione suas parcelas agrícolas ao sistema',
+          action: () => showSection('parcelas', document.querySelector('[data-section="parcelas"]'))
+        });
+      }
+
+      // Sugerir criar novo lote
+      steps.push({
+        icon: '📦',
+        title: 'Criar Novo Lote',
+        description: 'Registe sua produção',
+        action: () => showSection('lotes', document.querySelector('[data-section="lotes"]'))
+      });
+
+      if (steps.length === 0) {
+        container.innerHTML = '<p style="color: var(--mid); text-align: center;">Tudo em dia! Continue assim.</p>';
+      } else {
+        container.innerHTML = steps.slice(0, 4).map(step => `
+          <div style="padding: 1rem; border: 1px solid var(--light-rule); border-radius: 4px; margin-bottom: 1rem; cursor: pointer;" onclick="(${step.action})()">
+            <div style="display: flex; align-items: center; gap: .8rem;">
+              <div style="font-size: 1.5rem;">${step.icon}</div>
+              <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--espresso); margin-bottom: .2rem;">
+                  ${step.title}
+                </div>
+                <div style="font-size: .85rem; color: var(--mid);">
+                  ${step.description}
+                </div>
+              </div>
+              <div style="color: var(--gold);">→</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // ── DADOS PESSOAIS ──
+    async function loadDados() {
+      try {
+        const response = await apiCall(`/produtores/id/${currentUser.id}`);
+        const produtor = response.produtor;
+
+        if (produtor) {
+          document.getElementById('nome').value = produtor.nome || '';
+          document.getElementById('nbi').value = produtor.nbi || '';
+          document.getElementById('telefone').value = produtor.telefone || '';
+          document.getElementById('email').value = produtor.email || '';
+          document.getElementById('provincia').value = produtor.provincia || '';
+          document.getElementById('municipio').value = produtor.municipio || '';
+          document.getElementById('fileira').value = produtor.fileira || '';
+          document.getElementById('area_ha').value = produtor.area_ha || '';
+          document.getElementById('tipo_produtor').value = produtor.tipo_produtor || 'Individual / Familiar';
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        showAlert('Erro ao carregar seus dados. Tente novamente.', 'error');
+      }
+    }
+
+    // ── PARCELAS ──
+    async function loadParcelas() {
+      try {
+        const response = await apiCall(`/produtores/${currentUser.id}/parcelas`);
+        const parcelas = response.parcelas || [];
+
+        const tbody = document.querySelector('#parcelasTable tbody');
+        
+        if (parcelas.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--mid);">Nenhuma parcela registada</td></tr>';
+        } else {
+          tbody.innerHTML = parcelas.map(parcela => `
+            <tr>
+              <td>${parcela.fileira}</td>
+              <td>${parcela.area_ha}</td>
+              <td>${parcela.latitude ? `${parcela.latitude}, ${parcela.longitude}` : 'N/A'}</td>
+              <td>${formatDate(new Date(parcela.criado_em))}</td>
+              <td>
+                <button class="btn btn-outline" style="padding: .4rem .8rem; font-size: .7rem;" onclick="editParcela(${parcela.id})">
+                  Editar
+                </button>
+                <button class="btn btn-danger" style="padding: .4rem .8rem; font-size: .7rem;" onclick="deleteParcela(${parcela.id})">
+                  Excluir
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar parcelas:', error);
+        document.querySelector('#parcelasTable tbody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--mid);">Erro ao carregar parcelas</td></tr>';
+      }
+    }
+
+    // ── LOTES ──
+    async function loadLotes() {
+      try {
+        const response = await apiCall(`/lotes?produtor_id=${currentUser.id}`);
+        const lotes = response.lotes || [];
+
+        const tbody = document.querySelector('#lotesTable tbody');
+        
+        if (lotes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">Nenhum lote registado</td></tr>';
+        } else {
+          tbody.innerHTML = lotes.map(lote => `
+            <tr>
+              <td><strong>${lote.codigo}</strong></td>
+              <td>${lote.produto}</td>
+              <td>${lote.quantidade_kg}</td>
+              <td>${lote.provincia}</td>
+              <td><span class="card-status status-${lote.estado}">${lote.estado}</span></td>
+              <td>${formatDate(new Date(lote.criado_em))}</td>
+              <td>
+                <button class="btn btn-outline" style="padding: .4rem .8rem; font-size: .7rem;" onclick="viewLote(${lote.id})">
+                  Ver
+                </button>
+                <button class="btn btn-outline" style="padding: .4rem .8rem; font-size: .7rem;" onclick="editLote(${lote.id})">
+                  Editar
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar lotes:', error);
+        document.querySelector('#lotesTable tbody').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">Erro ao carregar lotes</td></tr>';
+      }
+    }
+
+    // ── CERTIFICADOS ──
+    async function loadCertificados() {
+      try {
+        const response = await apiCall(`/certificados?produtor_id=${currentUser.id}`);
+        const certificados = response.certificados || [];
+
+        const tbody = document.querySelector('#certificadosTable tbody');
+        
+        if (certificados.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">Nenhum certificado solicitado</td></tr>';
+        } else {
+          tbody.innerHTML = certificados.map(cert => `
+            <tr>
+              <td><strong>${cert.referencia}</strong></td>
+              <td>${cert.produto}</td>
+              <td>${cert.quantidade_kg}</td>
+              <td>${cert.pais_destino}</td>
+              <td>${formatDate(new Date(cert.data_exportacao))}</td>
+              <td><span class="card-status status-${cert.estado}">${cert.estado}</span></td>
+              <td>
+                <button class="btn btn-outline" style="padding: .4rem .8rem; font-size: .7rem;" onclick="viewCertificado('${cert.referencia}')">
+                  Ver
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar certificados:', error);
+        document.querySelector('#certificadosTable tbody').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">Erro ao carregar certificados</td></tr>';
+      }
+    }
+
+    // ── APOIOS ──
+    async function loadApoios() {
+      try {
+        const response = await apiCall(`/apoios?produtor_id=${currentUser.id}`);
+        const apoios = response.apoios || [];
+
+        const tbody = document.querySelector('#apoiosTable tbody');
+        
+        if (apoios.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">Nenhum pedido de apoio registado</td></tr>';
+        } else {
+          tbody.innerHTML = apoios.map(apoio => `
+            <tr>
+              <td><strong>${apoio.referencia}</strong></td>
+              <td>${apoio.tipo}</td>
+              <td>${apoio.fileira}</td>
+              <td>${apoio.valor_estimado ? `${apoio.valor_estimado} AOA` : 'N/A'}</td>
+              <td><span class="card-status status-${apoio.estado}">${apoio.estado}</span></td>
+              <td>${formatDate(new Date(apoio.criado_em))}</td>
+              <td>
+                <button class="btn btn-outline" style="padding: .4rem .8rem; font-size: .7rem;" onclick="viewApoio(${apoio.id})">
+                  Ver
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar apoios:', error);
+        document.querySelector('#apoiosTable tbody').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--mid);">Erro ao carregar apoios</td></tr>';
+      }
+    }
+
+    // ── MODALS ──
+    function openModal(title, content) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = content;
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    function openParcelaModal(parcelaId = null) {
+      const isEdit = parcelaId !== null;
+      const title = isEdit ? 'Editar Parcela' : 'Nova Parcela';
+      
+      const content = `
+        <form id="parcelaForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Fileira</label>
+              <select class="form-control" id="parcelaFileira" required>
+                <option value="">Selecione...</option>
+                <option value="Café">Café</option>
+                <option value="Cacau">Cacau</option>
+                <option value="Caju">Caju</option>
+                <option value="Dendém">Dendém</option>
+                <option value="Outra">Outra</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Área (ha)</label>
+              <input type="number" step="0.01" class="form-control" id="parcelaArea" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Latitude</label>
+              <input type="number" step="0.000001" class="form-control" id="parcelaLatitude">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Longitude</label>
+              <input type="number" step="0.000001" class="form-control" id="parcelaLongitude">
+            </div>
+          </div>
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary">
+              <span>💾</span> ${isEdit ? 'Actualizar' : 'Registar'}
+            </button>
+            <button type="button" class="btn btn-outline" onclick="closeModal()">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      `;
+
+      openModal(title, content);
+
+      // Setup form submission
+      document.getElementById('parcelaForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveParcela(parcelaId);
+      });
+
+      // Load data if editing
+      if (isEdit) {
+        loadParcelaData(parcelaId);
+      }
+    }
+
+    function openLoteModal(loteId = null) {
+      const isEdit = loteId !== null;
+      const title = isEdit ? 'Editar Lote' : 'Novo Lote';
+      
+      const content = `
+        <form id="loteForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Fileira</label>
+              <select class="form-control" id="loteFileira" required>
+                <option value="">Selecione...</option>
+                <option value="Café">Café</option>
+                <option value="Cacau">Cacau</option>
+                <option value="Caju">Caju</option>
+                <option value="Dendém">Dendém</option>
+                <option value="Outra">Outra</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Produto</label>
+              <input type="text" class="form-control" id="loteProduto" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Quantidade (kg)</label>
+              <input type="number" step="0.01" class="form-control" id="loteQuantidade" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Província</label>
+              <input type="text" class="form-control" id="loteProvincia" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Município</label>
+              <input type="text" class="form-control" id="loteMunicipio">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Estado</label>
+              <select class="form-control" id="loteEstado">
+                <option value="colhido">Colhido</option>
+                <option value="em_processamento">Em Processamento</option>
+                <option value="pronto">Pronto</option>
+                <option value="exportado">Exportado</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary">
+              <span>💾</span> ${isEdit ? 'Actualizar' : 'Registar'}
+            </button>
+            <button type="button" class="btn btn-outline" onclick="closeModal()">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      `;
+
+      openModal(title, content);
+
+      // Setup form submission
+      document.getElementById('loteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveLote(loteId);
+      });
+
+      // Load data if editing
+      if (isEdit) {
+        loadLoteData(loteId);
+      }
+    }
+
+    function openCertificadoModal() {
+      const content = `
+        <form id="certificadoForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Produto</label>
+              <input type="text" class="form-control" id="certProduto" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Quantidade (kg)</label>
+              <input type="number" step="0.01" class="form-control" id="certQuantidade" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Número do Lote</label>
+              <input type="text" class="form-control" id="certLote">
+            </div>
+            <div class="form-group">
+              <label class="form-label">País de Destino</label>
+              <input type="text" class="form-control" id="certDestino" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data de Exportação</label>
+              <input type="date" class="form-control" id="certDataExportacao" required>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary">
+              <span>📄</span> Solicitar Certificado
+            </button>
+            <button type="button" class="btn btn-outline" onclick="closeModal()">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      `;
+
+      openModal('Solicitar Certificado', content);
+
+      // Setup form submission
+      document.getElementById('certificadoForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveCertificado();
+      });
+    }
+
+    function openApoioModal() {
+      const content = `
+        <form id="apoioForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Tipo de Apoio</label>
+              <select class="form-control" id="apoioTipo" required>
+                <option value="">Selecione...</option>
+                <option value="Financeiro">Financeiro</option>
+                <option value="Técnico">Técnico</option>
+                <option value="Insumos">Insumos</option>
+                <option value="Equipamentos">Equipamentos</option>
+                <option value="Formação">Formação</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fileira</label>
+              <select class="form-control" id="apoioFileira" required>
+                <option value="">Selecione...</option>
+                <option value="Café">Café</option>
+                <option value="Cacau">Cacau</option>
+                <option value="Caju">Caju</option>
+                <option value="Dendém">Dendém</option>
+                <option value="Outra">Outra</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Valor Estimado (AOA)</label>
+              <input type="number" step="0.01" class="form-control" id="apoioValor">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descrição Detalhada</label>
+            <textarea class="form-control" id="apoioDescricao" rows="4" required></textarea>
+          </div>
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary">
+              <span>💰</span> Enviar Pedido
+            </button>
+            <button type="button" class="btn btn-outline" onclick="closeModal()">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      `;
+
+      openModal('Novo Pedido de Apoio', content);
+
+      // Setup form submission
+      document.getElementById('apoioForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveApoio();
+      });
+    }
+
+    // ── SAVE FUNCTIONS ──
+    async function saveParcela(parcelaId = null) {
+      const data = {
+        fileira: document.getElementById('parcelaFileira').value,
+        area_ha: parseFloat(document.getElementById('parcelaArea').value),
+        latitude: parseFloat(document.getElementById('parcelaLatitude').value) || null,
+        longitude: parseFloat(document.getElementById('parcelaLongitude').value) || null
+      };
+
+      try {
+        if (parcelaId) {
+          // Edit existing parcela (implementar endpoint PUT)
+          showAlert('Funcionalidade de edição em desenvolvimento', 'info');
+        } else {
+          // Create new parcela
+          await apiCall(`/produtores/${currentUser.id}/parcelas`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+          });
+          showAlert('Parcela registada com sucesso!', 'success');
+        }
+
+        closeModal();
+        loadParcelas();
+        loadDashboardData();
+      } catch (error) {
+        showAlert('Erro ao registar parcela. Tente novamente.', 'error');
+      }
+    }
+
+    async function saveLote(loteId = null) {
+      const data = {
+        fileira: document.getElementById('loteFileira').value,
+        produto: document.getElementById('loteProduto').value,
+        quantidade_kg: parseFloat(document.getElementById('loteQuantidade').value),
+        provincia: document.getElementById('loteProvincia').value,
+        municipio: document.getElementById('loteMunicipio').value || null,
+        estado: document.getElementById('loteEstado').value
+      };
+
+      try {
+        if (loteId) {
+          // Edit existing lote
+          await apiCall(`/lotes/${loteId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ estado: data.estado })
+          });
+          showAlert('Lote actualizado com sucesso!', 'success');
+        } else {
+          // Create new lote
+          await apiCall('/lotes', {
+            method: 'POST',
+            body: JSON.stringify({ ...data, produtor_id: currentUser.id })
+          });
+          showAlert('Lote registado com sucesso!', 'success');
+        }
+
+        closeModal();
+        loadLotes();
+        loadDashboardData();
+      } catch (error) {
+        showAlert('Erro ao registar lote. Tente novamente.', 'error');
+      }
+    }
+
+    async function saveCertificado() {
+      const data = {
+        produtor_id: currentUser.id,
+        produto: document.getElementById('certProduto').value,
+        quantidade: parseFloat(document.getElementById('certQuantidade').value),
+        lote: document.getElementById('certLote').value || null,
+        destino: document.getElementById('certDestino').value,
+        data_exportacao: document.getElementById('certDataExportacao').value
+      };
+
+      try {
+        await apiCall('/certificados', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+
+        showAlert('Certificado solicitado com sucesso!', 'success');
+        closeModal();
+        loadCertificados();
+        loadDashboardData();
+      } catch (error) {
+        showAlert('Erro ao solicitar certificado. Tente novamente.', 'error');
+      }
+    }
+
+    async function saveApoio() {
+      const data = {
+        tipo: document.getElementById('apoioTipo').value,
+        fileira: document.getElementById('apoioFileira').value,
+        valor_estimado: parseFloat(document.getElementById('apoioValor').value) || null,
+        descricao: document.getElementById('apoioDescricao').value
+      };
+
+      try {
+        await apiCall('/apoios', {
+          method: 'POST',
+          body: JSON.stringify({ ...data, produtor_id: currentUser.id })
+        });
+
+        showAlert('Pedido de apoio enviado com sucesso!', 'success');
+        closeModal();
+        loadApoios();
+        loadDashboardData();
+      } catch (error) {
+        showAlert('Erro ao enviar pedido. Tente novamente.', 'error');
+      }
+    }
+
+    // ── RASTREIO ──
+    async function searchRastreio(codigo) {
+      try {
+        const response = await apiCall(`/rastreio/${codigo}`);
+        const resultContainer = document.getElementById('rastreioResult');
+
+        if (response.lote) {
+          const { lote, eventos } = response;
+          
+          resultContainer.innerHTML = `
+            <div class="form-container">
+              <h3 class="form-title">Resultado do Rastreio</h3>
+              <div class="card">
+                <div class="card-header">
+                  <h4 class="card-title">Lote ${lote.codigo}</h4>
+                  <span class="card-status status-${lote.estado}">${lote.estado}</span>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <span>📦</span> ${lote.produto}
+                  </div>
+                  <div class="card-meta-item">
+                    <span>⚖️</span> ${lote.quantidade_kg}kg
+                  </div>
+                  <div class="card-meta-item">
+                    <span>📍</span> ${lote.provincia}, ${lote.municipio || 'N/A'}
+                  </div>
+                  <div class="card-meta-item">
+                    <span>📅</span> ${formatDate(new Date(lote.criado_em))}
+                  </div>
+                </div>
+              </div>
+
+              <h4 style="margin-top: 2rem; margin-bottom: 1rem; font-family: var(--serif); color: var(--espresso);">Histórico de Eventos</h4>
+              <div class="cards-grid">
+                ${eventos.map(evento => `
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="card-title">${evento.titulo}</h5>
+                      <span style="font-size: .8rem; color: var(--mid);">
+                        ${formatDate(new Date(evento.data_evento))}
+                      </span>
+                    </div>
+                    ${evento.descricao ? `<p style="color: var(--mid); margin-top: .5rem;">${evento.descricao}</p>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          
+          resultContainer.style.display = 'block';
+        } else {
+          showAlert('Lote não encontrado', 'warning');
+          resultContainer.style.display = 'none';
+        }
+      } catch (error) {
+        showAlert('Erro ao consultar lote. Verifique o código e tente novamente.', 'error');
+      }
+    }
+
+    // ── EVENT LISTENERS ──
+    function setupEventListeners() {
+      // Dados form
+      document.getElementById('dadosForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const data = {
+          nome: document.getElementById('nome').value,
+          telefone: document.getElementById('telefone').value,
+          email: document.getElementById('email').value,
+          provincia: document.getElementById('provincia').value,
+          municipio: document.getElementById('municipio').value,
+          fileira: document.getElementById('fileira').value,
+          area_ha: parseFloat(document.getElementById('area_ha').value),
+          tipo_produtor: document.getElementById('tipo_produtor').value
+        };
+
+        try {
+          await apiCall(`/produtores/${currentUser.id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+          });
+
+          showAlert('Dados actualizados com sucesso!', 'success');
+          
+          // Update current user data
+          currentUser = { ...currentUser, ...data };
+          updateUserInfo();
+        } catch (error) {
+          showAlert('Erro ao actualizar dados. Tente novamente.', 'error');
+        }
+      });
+
+      // Rastreio form
+      document.getElementById('rastreioForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const codigo = document.getElementById('rastreioCodigo').value.trim();
+        await searchRastreio(codigo);
+      });
+
+      // Modal overlay click
+      document.getElementById('modalOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'modalOverlay') {
+          closeModal();
+        }
+      });
+    }
+
+    // ── UTILITIES ──
+    function formatDate(date) {
+      return new Intl.DateTimeFormat('pt-AO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).format(date);
+    }
+
+    function showAlert(message, type = 'info') {
+      // Remove existing alerts
+      const existingAlert = document.querySelector('.alert');
+      if (existingAlert) {
+        existingAlert.remove();
+      }
+
+      // Create new alert
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+      
+      // Insert at the top of main content
+      const main = document.querySelector('.portal-main');
+      main.insertBefore(alert, main.firstChild);
+
+      // Auto remove after 5 seconds
+      setTimeout(() => {
+        alert.remove();
+      }, 5000);
+    }
+
+    // Placeholder functions for CRUD operations
+    function editParcela(id) {
+      openParcelaModal(id);
+    }
+
+    function deleteParcela(id) {
+      if (confirm('Tem certeza que deseja excluir esta parcela?')) {
+        showAlert('Funcionalidade de exclusão em desenvolvimento', 'info');
+      }
+    }
+
+    function viewLote(id) {
+      showAlert('Funcionalidade de visualização detalhada em desenvolvimento', 'info');
+    }
+
+    function editLote(id) {
+      openLoteModal(id);
+    }
+
+    function getEstadoBadge(estado) {
+      const colors = {
+        'pendente': 'background: #f59e0b; color: #000;',
+        'emitido': 'background: #10b981; color: #fff;',
+        'rejeitado': 'background: #ef4444; color: #fff;'
+      };
+      return `<span style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; ${colors[estado] || 'background: #6b7280; color: #fff;'}">${estado}</span>`;
+    }
+
+    async function viewCertificado(id) {
+      try {
+        const response = await apiCall(`/certificados/${id}`);
+        const cert = response.certificado;
+
+        const estadoBadge = getEstadoBadge(cert.estado);
+
+        const content = `
+          <div style="display: grid; gap: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; color: var(--mid);">Referência</label>
+                <div style="font-weight: 600; font-size: 1.1rem;">${cert.referencia}</div>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; color: var(--mid);">Estado</label>
+                <div>${estadoBadge}</div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; color: var(--mid);">Produto</label>
+                <div>${cert.produto}</div>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; color: var(--mid);">Quantidade (kg)</label>
+                <div>${cert.quantidade_kg}</div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; color: var(--mid);">Número do Lote</label>
+                <div>${cert.numero_lote || 'N/A'}</div>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; color: var(--mid);">País de Destino</label>
+                <div>${cert.pais_destino}</div>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; color: var(--mid);">Data de Exportação</label>
+              <div>${new Date(cert.data_exportacao).toLocaleDateString('pt-PT')}</div>
+            </div>
+
+            ${cert.observacoes ? `
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; color: var(--mid);">Observações</label>
+                <div style="padding: 0.75rem; background: var(--bg-alt); border-radius: 4px;">${cert.observacoes}</div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+
+        openModal('Detalhes do Certificado', content);
+      } catch (error) {
+        console.error('Erro ao carregar certificado:', error);
+        showAlert('Erro ao carregar detalhes do certificado.', 'error');
+      }
+    }
+
+    function viewApoio(id) {
+      showAlert('Funcionalidade de visualização detalhada em desenvolvimento', 'info');
+    }
+
+    function loadParcelaData(id) {
+      // Carregar dados da parcela para edição
+      showAlert('Carregando dados da parcela...', 'info');
+    }
+
+    function loadLoteData(id) {
+      // Carregar dados do lote para edição
+      showAlert('Carregando dados do lote...', 'info');
+    }
+  </script>
+</body>
+</html>

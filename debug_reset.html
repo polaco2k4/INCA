@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Reset API</title>
+</head>
+<body>
+    <h1>Debug Reset API</h1>
+    <button onclick="testReset()">Testar Reset POST</button>
+    <div id="result"></div>
+
+    <script>
+        async function testReset() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>A testar...</p>';
+            
+            try {
+                console.log('A fazer POST para /api/reset-solicitar...');
+                
+                const response = await fetch('/api/reset-solicitar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        nbi: 'DEMO-006-UIG-2026', 
+                        email: 'joao@example.com' 
+                    })
+                });
+
+                console.log('Status:', response.status);
+                console.log('Headers:', response.headers);
+
+                const contentType = response.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = '<h2>Sucesso!</h2><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    const text = await response.text();
+                    resultDiv.innerHTML = '<h2>Erro - Resposta não JSON:</h2><pre>Status: ' + response.status + '\n\n' + text.substring(0, 1000) + '...</pre>';
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                resultDiv.innerHTML = '<h2>Erro de conexão:</h2><pre>' + error.message + '</pre>';
+            }
+        }
+    </script>
+</body>
+</html>

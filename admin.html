@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Administrativo — INCA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #C49A3C;
+    --primary-dark: #A67F2A;
+    --danger: #DC2626;
+    --danger-dark: #B91C1C;
+    --success: #16A34A;
+    --success-dark: #15803D;
+    --warning: #F59E0B;
+    --info: #3B82F6;
+    --dark: #1A0A00;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --gray-900: #111827;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    line-height: 1.6;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ── LOGIN SCREEN ── */
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--dark) 0%, #3B1A08 100%);
+    padding: 2rem;
+  }
+
+  .login-card {
+    background: white;
+    border-radius: 12px;
+    padding: 3rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+
+  .login-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .login-logo h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: .5rem;
+  }
+
+  .login-logo p {
+    font-size: .875rem;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: .5rem;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: .75rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: .875rem;
+    transition: all .2s;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(196,154,60,.1);
+  }
+
+  .btn {
+    display: inline-block;
+    padding: .75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    width: 100%;
+  }
+
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  .btn-success {
+    background: var(--success);
+    color: white;
+  }
+
+  .btn-success:hover { background: var(--success-dark); }
+
+  .btn-danger {
+    background: var(--danger);
+    color: white;
+  }
+
+  .btn-danger:hover { background: var(--danger-dark); }
+
+  .btn-sm {
+    padding: .5rem 1rem;
+    font-size: .8rem;
+  }
+
+  .alert {
+    padding: .875rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: .875rem;
+  }
+
+  .alert-error {
+    background: #FEE2E2;
+    color: var(--danger-dark);
+    border: 1px solid #FECACA;
+  }
+
+  .alert-success {
+    background: #D1FAE5;
+    color: var(--success-dark);
+    border: 1px solid #A7F3D0;
+  }
+
+  /* ── ADMIN PANEL ── */
+  #adminPanel {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: 260px;
+    background: var(--gray-900);
+    color: white;
+    padding: 2rem 0;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-header {
+    padding: 0 1.5rem 2rem;
+    border-bottom: 1px solid var(--gray-700);
+  }
+
+  .sidebar-header h2 {
+    font-size: 1.25rem;
+    color: var(--primary);
+    margin-bottom: .25rem;
+  }
+
+  .sidebar-header p {
+    font-size: .75rem;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+
+  .sidebar-nav {
+    padding: 1.5rem 0;
+  }
+
+  .nav-item {
+    padding: .75rem 1.5rem;
+    color: var(--gray-300);
+    cursor: pointer;
+    transition: all .2s;
+    font-size: .875rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+
+  .nav-item:hover {
+    background: var(--gray-800);
+    color: white;
+  }
+
+  .nav-item.active {
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+  }
+
+  .nav-item .badge {
+    margin-left: auto;
+    background: var(--danger);
+    color: white;
+    font-size: .7rem;
+    padding: .2rem .5rem;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+
+  .sidebar-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--gray-700);
+    margin-top: auto;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1rem;
+  }
+
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .875rem;
+  }
+
+  .user-details h4 {
+    font-size: .875rem;
+    font-weight: 600;
+  }
+
+  .user-details p {
+    font-size: .75rem;
+    color: var(--gray-400);
+  }
+
+  .btn-logout {
+    width: 100%;
+    background: var(--gray-800);
+    color: white;
+    padding: .5rem;
+    font-size: .8rem;
+  }
+
+  .btn-logout:hover {
+    background: var(--gray-700);
+  }
+
+  .main-content {
+    margin-left: 260px;
+    flex: 1;
+    padding: 2rem;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: .5rem;
+  }
+
+  .page-header p {
+    color: var(--gray-500);
+    font-size: .875rem;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  }
+
+  .stat-card h3 {
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: .5rem;
+  }
+
+  .stat-card .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+
+  .stat-card.warning .value { color: var(--warning); }
+  .stat-card.success .value { color: var(--success); }
+  .stat-card.info .value { color: var(--info); }
+
+  .card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    margin-bottom: 1.5rem;
+  }
+
+  .card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-header h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+  }
+
+  thead {
+    background: var(--gray-50);
+  }
+
+  th {
+    text-align: left;
+    padding: .75rem 1rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    font-size: .75rem;
+    letter-spacing: .05em;
+  }
+
+  td {
+    padding: 1rem;
+    border-top: 1px solid var(--gray-200);
+  }
+
+  tbody tr:hover {
+    background: var(--gray-50);
+  }
+
+  .badge-status {
+    display: inline-block;
+    padding: .25rem .75rem;
+    border-radius: 12px;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+
+  .badge-pending {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .badge-active {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .badge-inactive {
+    background: #FEE2E2;
+    color: #991B1B;
+  }
+
+  .badge-approved {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .badge-rejected {
+    background: #FEE2E2;
+    color: #991B1B;
+  }
+
+  .badge-emitted {
+    background: #DBEAFE;
+    color: #1E40AF;
+  }
+
+  .actions {
+    display: flex;
+    gap: .5rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--gray-500);
+  }
+
+  .empty-state svg {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    opacity: .3;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray-500);
+  }
+
+  .spinner {
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .modal-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    gap: .75rem;
+    justify-content: flex-end;
+  }
+
+  .info-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .info-item label {
+    display: block;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: .25rem;
+  }
+
+  .info-item p {
+    font-size: .875rem;
+    color: var(--gray-900);
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  LOGIN SCREEN                                              -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>INCA Admin</h1>
+      <p>Painel Administrativo</p>
+    </div>
+    <div id="loginError" class="alert alert-error hidden"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  ADMIN PANEL                                               -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="adminPanel" class="hidden">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>INCA</h2>
+      <p>Administração</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard">
+        <span>📊</span> Dashboard
+      </div>
+      <div class="nav-item" data-page="produtores">
+        <span>👥</span> Produtores
+        <span class="badge" id="badgeProdutores">0</span>
+      </div>
+      <div class="nav-item" data-page="certificados">
+        <span>📜</span> Certificados
+        <span class="badge" id="badgeCertificados">0</span>
+      </div>
+      <div class="nav-item" data-page="apoios">
+        <span>🤝</span> Pedidos de Apoio
+        <span class="badge" id="badgeApoios">0</span>
+      </div>
+      <div class="nav-item" data-page="artigos">
+        <span>📰</span> Artigos
+      </div>
+      <div class="nav-item" data-page="projectos">
+        <span>📁</span> Projectos
+      </div>
+      <div class="nav-item" data-page="anuncios">
+        <span>📢</span> Anúncios
+      </div>
+      <div class="nav-item" data-page="faq">
+        <span>❓</span> FAQ
+      </div>
+      <div class="nav-item" data-page="logs">
+        <span>📝</span> Logs de Atividade
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-details">
+          <h4 id="userName">Admin</h4>
+          <p id="userLevel">Operador</p>
+        </div>
+      </div>
+      <button class="btn btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <!-- DASHBOARD -->
+    <div id="pageDashboard" class="page">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Visão geral do sistema INCA</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card warning">
+          <h3>Produtores Pendentes</h3>
+          <div class="value" id="statProdutoresPendentes">-</div>
+        </div>
+        <div class="stat-card success">
+          <h3>Produtores Activos</h3>
+          <div class="value" id="statProdutoresActivos">-</div>
+        </div>
+        <div class="stat-card warning">
+          <h3>Certificados Pendentes</h3>
+          <div class="value" id="statCertificadosPendentes">-</div>
+        </div>
+        <div class="stat-card info">
+          <h3>Certificados Emitidos</h3>
+          <div class="value" id="statCertificadosEmitidos">-</div>
+        </div>
+        <div class="stat-card warning">
+          <h3>Apoios em Análise</h3>
+          <div class="value" id="statApoiosPendentes">-</div>
+        </div>
+        <div class="stat-card success">
+          <h3>Apoios Aprovados</h3>
+          <div class="value" id="statApoiosAprovados">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUTORES -->
+    <div id="pageProdutores" class="page hidden">
+      <div class="page-header">
+        <h1>Gestão de Produtores</h1>
+        <p>Visualizar e gerir todos os produtores cadastrados</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Todos os Produtores</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingProdutores" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableProdutores" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CERTIFICADOS -->
+    <div id="pageCertificados" class="page hidden">
+      <div class="page-header">
+        <h1>Gestão de Certificados</h1>
+        <p>Emitir ou rejeitar certificados de origem</p>
+      </div>
+      
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+        <button class="btn btn-primary btn-sm" onclick="showCertificadosTab('pendentes')" id="btnCertPendentes">Pendentes</button>
+        <button class="btn btn-sm" style="background: var(--gray-300); color: var(--gray-700);" onclick="showCertificadosTab('emitidos')" id="btnCertEmitidos">Emitidos</button>
+        <button class="btn btn-sm" style="background: var(--gray-300); color: var(--gray-700);" onclick="showCertificadosTab('rejeitados')" id="btnCertRejeitados">Rejeitados</button>
+      </div>
+
+      <div class="card" id="cardCertPendentes">
+        <div class="card-header">
+          <h2>Certificados Pendentes</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingCertificados" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableCertificados" class="hidden"></div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="cardCertEmitidos">
+        <div class="card-header">
+          <h2>Certificados Emitidos</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingCertEmitidos" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableCertEmitidos" class="hidden"></div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="cardCertRejeitados">
+        <div class="card-header">
+          <h2>Certificados Rejeitados</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingCertRejeitados" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableCertRejeitados" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APOIOS -->
+    <div id="pageApoios" class="page hidden">
+      <div class="page-header">
+        <h1>Gestão de Pedidos de Apoio</h1>
+        <p>Aprovar ou rejeitar pedidos de apoio técnico/financeiro</p>
+      </div>
+      
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+        <button class="btn btn-primary btn-sm" onclick="showApoiosTab('analise')" id="btnApoiosAnalise">Em Análise</button>
+        <button class="btn btn-sm" style="background: var(--gray-300); color: var(--gray-700);" onclick="showApoiosTab('aprovados')" id="btnApoiosAprovados">Aprovados</button>
+        <button class="btn btn-sm" style="background: var(--gray-300); color: var(--gray-700);" onclick="showApoiosTab('rejeitados')" id="btnApoiosRejeitados">Rejeitados</button>
+      </div>
+
+      <div class="card" id="cardApoiosAnalise">
+        <div class="card-header">
+          <h2>Pedidos em Análise</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingApoios" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableApoios" class="hidden"></div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="cardApoiosAprovados">
+        <div class="card-header">
+          <h2>Pedidos Aprovados</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingApoiosAprovados" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableApoiosAprovados" class="hidden"></div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="cardApoiosRejeitados">
+        <div class="card-header">
+          <h2>Pedidos Rejeitados</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingApoiosRejeitados" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableApoiosRejeitados" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARTIGOS -->
+    <div id="pageArtigos" class="page hidden">
+      <div class="page-header">
+        <h1>Gestão de Artigos</h1>
+        <p>Criar e gerir artigos e notícias do portal</p>
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <button class="btn btn-primary" onclick="showNovoArtigoModal()">+ Novo Artigo</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Artigos Publicados</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingArtigos" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableArtigos" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECTOS -->
+    <div id="pageProjectos" class="page hidden">
+      <div class="page-header">
+        <h1>Gestão de Projectos</h1>
+        <p>Criar e gerir projectos do INCA</p>
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <button class="btn btn-primary" onclick="showNovoProjectoModal()">+ Novo Projecto</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Projectos Activos</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingProjectos" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableProjectos" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANÚNCIOS -->
+    <div id="pageAnuncios" class="page hidden">
+      <div class="page-header">
+        <h1>Gestão de Anúncios</h1>
+        <p>Criar e gerir anúncios para os utilizadores</p>
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <button class="btn btn-primary" onclick="showNovoAnuncioModal()">+ Novo Anúncio</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Anúncios Activos</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingAnuncios" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableAnuncios" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div id="pageFaq" class="page hidden">
+      <div class="page-header">
+        <h1>Gestão de FAQ</h1>
+        <p>Gerir perguntas frequentes</p>
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <button class="btn btn-primary" onclick="showNovoFaqModal()">+ Nova Pergunta</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Perguntas Frequentes</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingFaq" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableFaq" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div id="pageLogs" class="page hidden">
+      <div class="page-header">
+        <h1>Logs de Atividade</h1>
+        <p>Histórico de ações administrativas</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Atividades Recentes</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingLogs" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableLogs" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL DETALHES -->
+<div id="modalDetalhes" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">Detalhes</h3>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ARTIGO -->
+<div id="modalArtigo" class="modal hidden">
+  <div class="modal-content" style="max-width: 700px;">
+    <div class="modal-header">
+      <h3 id="modalArtigoTitle">Novo Artigo</h3>
+    </div>
+    <div class="modal-body">
+      <form id="formArtigo">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Título (PT) *</label>
+            <input type="text" id="artigoTitulo" required>
+          </div>
+          <div class="form-group">
+            <label>Title (EN) *</label>
+            <input type="text" id="artigoTituloEn" required>
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Resumo (PT)</label>
+            <input type="text" id="artigoResumo" placeholder="Breve descrição do artigo">
+          </div>
+          <div class="form-group">
+            <label>Summary (EN)</label>
+            <input type="text" id="artigoResumoEn" placeholder="Brief description of the article">
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Conteúdo (PT) *</label>
+            <textarea id="artigoConteudo" rows="8" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Content (EN) *</label>
+            <textarea id="artigoConteudoEn" rows="8" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" required></textarea>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="artigoCategoria" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+            <option value="">Selecionar categoria</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>URL da Imagem</label>
+          <input type="url" id="artigoImagem" placeholder="https://exemplo.com/imagem.jpg">
+        </div>
+        <div class="form-group">
+          <label>Tags (separadas por vírgula)</label>
+          <input type="text" id="artigoTags" placeholder="café, produção, angola">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="artigoDestaque" style="width: auto; margin-right: .5rem;">
+            Artigo em destaque
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="artigoEstado" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+            <option value="rascunho">Rascunho</option>
+            <option value="publicado">Publicado</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeArtigoModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarArtigo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ANÚNCIO -->
+<div id="modalAnuncio" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalAnuncioTitle">Novo Anúncio</h3>
+    </div>
+    <div class="modal-body">
+      <form id="formAnuncio">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Título (PT) *</label>
+            <input type="text" id="anuncioTitulo" required>
+          </div>
+          <div class="form-group">
+            <label>Title (EN) *</label>
+            <input type="text" id="anuncioTituloEn" required>
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Mensagem (PT) *</label>
+            <textarea id="anuncioMensagem" rows="4" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Message (EN) *</label>
+            <textarea id="anuncioMensagemEn" rows="4" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" required></textarea>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="anuncioTipo" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+            <option value="info">Informação</option>
+            <option value="aviso">Aviso</option>
+            <option value="urgente">Urgente</option>
+            <option value="sucesso">Sucesso</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Link URL</label>
+          <input type="url" id="anuncioLinkUrl" placeholder="https://exemplo.com">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Texto do Link (PT)</label>
+            <input type="text" id="anuncioLinkTexto" placeholder="Saber mais">
+          </div>
+          <div class="form-group">
+            <label>Link Text (EN)</label>
+            <input type="text" id="anuncioLinkTextoEn" placeholder="Learn more">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Data de Início</label>
+          <input type="datetime-local" id="anuncioDataInicio" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+        </div>
+        <div class="form-group">
+          <label>Data de Fim</label>
+          <input type="datetime-local" id="anuncioDataFim" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="anuncioActivo" checked style="width: auto; margin-right: .5rem;">
+            Anúncio activo
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeAnuncioModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarAnuncio()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FAQ -->
+<div id="modalFaq" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalFaqTitle">Nova Pergunta</h3>
+    </div>
+    <div class="modal-body">
+      <form id="formFaq">
+        <div class="form-group">
+          <label>Pergunta *</label>
+          <input type="text" id="faqPergunta" required>
+        </div>
+        <div class="form-group">
+          <label>Resposta *</label>
+          <textarea id="faqResposta" rows="5" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <input type="text" id="faqCategoria" placeholder="Ex: Registo, Certificados, Apoios">
+        </div>
+        <div class="form-group">
+          <label>Ordem</label>
+          <input type="number" id="faqOrdem" value="0" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="faqActivo" checked style="width: auto; margin-right: .5rem;">
+            Pergunta activa
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeFaqModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarFaq()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROJECTO -->
+<div id="modalProjecto" class="modal hidden">
+  <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-header">
+      <h3 id="modalProjectoTitle">Novo Projecto</h3>
+    </div>
+    <div class="modal-body">
+      <form id="formProjecto">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Nome do Projecto (PT) *</label>
+            <input type="text" id="projectoNome" required>
+          </div>
+          <div class="form-group">
+            <label>Project Name (EN) *</label>
+            <input type="text" id="projectoNomeEn" required>
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Descrição (PT) *</label>
+            <textarea id="projectoDescricao" rows="3" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Description (EN) *</label>
+            <textarea id="projectoDescricaoEn" rows="3" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" required></textarea>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Fileira</label>
+            <select id="projectoFileira" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+              <option value="">Selecionar...</option>
+              <option value="Café">Café</option>
+              <option value="Dendém">Dendém</option>
+              <option value="Cacau">Cacau</option>
+              <option value="Caju">Caju</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Investimento (USD)</label>
+            <input type="number" id="projectoInvestimento" placeholder="0.00" step="0.01" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Área (Hectares)</label>
+            <input type="number" id="projectoHectares" placeholder="0.00" step="0.01" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Produtores a Capacitar</label>
+            <input type="number" id="projectoProdutores" placeholder="0" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Capacidade Anual (ton)</label>
+            <input type="number" id="projectoCapacidade" placeholder="0.00" step="0.01" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="projectoEstado" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+              <option value="em_planeamento">Em Planeamento</option>
+              <option value="em_execucao">Em Execução</option>
+              <option value="concluido">Concluído</option>
+              <option value="suspenso">Suspenso</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Ano de Início</label>
+            <input type="number" id="projectoAnoInicio" placeholder="2024" min="2020" max="2030" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Ano de Conclusão</label>
+            <input type="number" id="projectoAnoConclusao" placeholder="2027" min="2020" max="2035" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Coordenador</label>
+            <input type="text" id="projectoCoordenador" placeholder="Nome do coordenador">
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="text" id="projectoTelefone" placeholder="+244 XXX XXX XXX">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="projectoEmail" placeholder="email@exemplo.com">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Províncias</label>
+          <input type="text" id="projectoProvincias" placeholder="Separadas por vírgula (ex: Uíge, Kwanza Norte)">
+        </div>
+
+        <div class="form-group">
+          <label>Tecnologias</label>
+          <textarea id="projectoTecnologias" rows="2" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" placeholder="Tecnologias implementadas, separadas por vírgula"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Mercados de Exportação</label>
+          <input type="text" id="projectoMercados" placeholder="Separados por vírgula (ex: China, UE, USA)">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Emoji (Logo)</label>
+            <input type="text" id="projectoEmoji" placeholder="📋" maxlength="2" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Cor do Tema</label>
+            <input type="color" id="projectoCor" value="#C49A3C" style="width: 100%; height: 38px; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <div style="padding-top: 8px;">
+              <label style="font-weight: normal;">
+                <input type="checkbox" id="projectoActivo" checked style="width: auto; margin-right: .5rem;">
+                Projecto activo
+              </label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeProjectoModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarProjecto()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.origin + '/api/admin';
+let token = localStorage.getItem('admin_token');
+let currentAdmin = null;
+
+// ══════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const errorDiv = document.getElementById('loginError');
+
+  try {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao fazer login');
+
+    token = data.token;
+    currentAdmin = data.admin;
+    localStorage.setItem('admin_token', token);
+    
+    showAdminPanel();
+  } catch (err) {
+    errorDiv.textContent = err.message;
+    errorDiv.classList.remove('hidden');
+  }
+});
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  token = null;
+  currentAdmin = null;
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('adminPanel').classList.add('hidden');
+}
+
+async function showAdminPanel() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('adminPanel').classList.remove('hidden');
+
+  if (currentAdmin) {
+    document.getElementById('userName').textContent = currentAdmin.nome;
+    document.getElementById('userLevel').textContent = currentAdmin.nivel;
+    document.getElementById('userAvatar').textContent = currentAdmin.nome.charAt(0).toUpperCase();
+  }
+
+  loadDashboard();
+}
+
+// ══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const page = item.dataset.page;
+    
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    document.getElementById(`page${page.charAt(0).toUpperCase() + page.slice(1)}`).classList.remove('hidden');
+
+    if (page === 'dashboard') loadDashboard();
+    else if (page === 'produtores') loadProdutores();
+    else if (page === 'certificados') loadCertificados();
+    else if (page === 'apoios') loadApoios();
+    else if (page === 'artigos') loadArtigos();
+    else if (page === 'projectos') loadProjectos();
+    else if (page === 'anuncios') loadAnuncios();
+    else if (page === 'faq') loadFaq();
+    else if (page === 'logs') loadLogs();
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+//  API HELPERS
+// ══════════════════════════════════════════════════════════
+
+async function apiCall(endpoint, options = {}) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers
+    }
+  });
+
+  if (res.status === 401) {
+    logout();
+    throw new Error('Sessão expirada');
+  }
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
+
+// ══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════════════
+
+async function loadDashboard() {
+  try {
+    const data = await apiCall('/dashboard');
+    const s = data.stats;
+
+    document.getElementById('statProdutoresPendentes').textContent = s.produtores_pendentes;
+    document.getElementById('statProdutoresActivos').textContent = s.produtores_activos;
+    document.getElementById('statCertificadosPendentes').textContent = s.certificados_pendentes;
+    document.getElementById('statCertificadosEmitidos').textContent = s.certificados_emitidos;
+    document.getElementById('statApoiosPendentes').textContent = s.apoios_pendentes;
+    document.getElementById('statApoiosAprovados').textContent = s.apoios_aprovados;
+
+    document.getElementById('badgeProdutores').textContent = s.produtores_pendentes;
+    document.getElementById('badgeCertificados').textContent = s.certificados_pendentes;
+    document.getElementById('badgeApoios').textContent = s.apoios_pendentes;
+  } catch (err) {
+    console.error('Erro ao carregar dashboard:', err);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  PRODUTORES
+// ══════════════════════════════════════════════════════════
+
+async function loadProdutores() {
+  const container = document.getElementById('tableProdutores');
+  const loading = document.getElementById('loadingProdutores');
+
+  try {
+    const data = await apiCall('/produtores');
+    loading.classList.add('hidden');
+
+    if (data.produtores.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum produtor encontrado</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Nome</th><th>NBI</th><th>Província</th><th>Fileira</th><th>Área (ha)</th><th>Estado</th><th>Data</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.produtores.forEach(p => {
+      const statusBadge = p.activo ? 
+        '<span class="badge-status badge-active">Activo</span>' : 
+        '<span class="badge-status badge-pending">Pendente</span>';
+      
+      const actionButtons = p.activo ? 
+        `<button class="btn btn-warning btn-sm" onclick="desactivarProdutor(${p.id})">Desactivar</button>` :
+        `<button class="btn btn-success btn-sm" onclick="aprovarProdutor(${p.id})">Aprovar</button>
+         <button class="btn btn-danger btn-sm" onclick="rejeitarProdutor(${p.id})">Rejeitar</button>`;
+
+      html += `<tr>
+        <td><strong>${p.nome}</strong></td>
+        <td>${p.nbi}</td>
+        <td>${p.provincia || '-'}</td>
+        <td>${p.fileira || '-'}</td>
+        <td>${p.area_ha || '-'}</td>
+        <td>${statusBadge}</td>
+        <td>${new Date(p.criado_em).toLocaleDateString('pt-PT')}</td>
+        <td class="actions">
+          ${actionButtons}
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+async function aprovarProdutor(id) {
+  if (!confirm('Aprovar este produtor?')) return;
+  
+  try {
+    await apiCall(`/produtores/${id}/aprovar`, { method: 'PUT' });
+    alert('Produtor aprovado com sucesso!');
+    loadProdutores();
+    loadDashboard();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function rejeitarProdutor(id) {
+  const motivo = prompt('Motivo da rejeição (opcional):');
+  if (motivo === null) return;
+  
+  try {
+    await apiCall(`/produtores/${id}/rejeitar`, {
+      method: 'PUT',
+      body: JSON.stringify({ motivo })
+    });
+    alert('Produtor rejeitado.');
+    loadProdutores();
+    loadDashboard();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function desactivarProdutor(id) {
+  if (!confirm('Desactivar este produtor? Ele poderá ser reactivado mais tarde.')) return;
+  
+  try {
+    await apiCall(`/produtores/${id}/desactivar`, { method: 'PUT' });
+    alert('Produtor desactivado com sucesso!');
+    loadProdutores();
+    loadDashboard();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  CERTIFICADOS
+// ══════════════════════════════════════════════════════════
+
+async function loadCertificados() {
+  const container = document.getElementById('tableCertificados');
+  const loading = document.getElementById('loadingCertificados');
+
+  try {
+    const data = await apiCall('/certificados/pendentes');
+    loading.classList.add('hidden');
+
+    if (data.certificados.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum certificado pendente</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Referência</th><th>Produtor</th><th>Produto</th><th>Quantidade (kg)</th><th>Destino</th><th>Data</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.certificados.forEach(c => {
+      html += `<tr>
+        <td><strong>${c.referencia}</strong></td>
+        <td>${c.produtor_nome || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
+        <td>${c.produto}</td>
+        <td>${c.quantidade_kg.toLocaleString('pt-PT')}</td>
+        <td>${c.pais_destino}</td>
+        <td>${new Date(c.criado_em).toLocaleDateString('pt-PT')}</td>
+        <td class="actions">
+          <button class="btn btn-primary btn-sm" style="background: var(--primary); color: white;" onclick="viewCertificadoAdmin('${c.referencia}')">Ver</button>
+          <button class="btn btn-success btn-sm" style="background: var(--success); color: white;" onclick="emitirCertificado(${c.id})">Emitir</button>
+          <button class="btn btn-danger btn-sm" style="background: var(--danger); color: white;" onclick="rejeitarCertificado(${c.id})">Rejeitar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+async function emitirCertificado(id) {
+  if (!confirm('Emitir este certificado?')) return;
+  
+  try {
+    await apiCall(`/certificados/${id}/emitir`, { method: 'PUT' });
+    alert('Certificado emitido com sucesso!');
+    loadCertificados();
+    loadDashboard();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function rejeitarCertificado(id) {
+  const observacoes = prompt('Motivo da rejeição:');
+  if (!observacoes) return;
+
+  try {
+    await apiCall(`/certificados/${id}/rejeitar`, {
+      method: 'PUT',
+      body: JSON.stringify({ observacoes })
+    });
+    alert('Certificado rejeitado.');
+    loadCertificados();
+    loadDashboard();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function viewCertificadoAdmin(referencia) {
+  try {
+    const response = await apiCall(`/certificados/${referencia}`);
+    const cert = response.certificado;
+
+    const estadoColors = {
+      'pendente': '#f59e0b',
+      'emitido': '#10b981',
+      'rejeitado': '#ef4444'
+    };
+    const color = estadoColors[cert.estado] || '#6b7280';
+
+    const modalContent = document.getElementById('modalBody');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalOverlay = document.getElementById('modalDetalhes');
+
+    modalTitle.textContent = `Certificado ${cert.referencia}`;
+    modalContent.innerHTML = `
+      <div style="display: grid; gap: 1.5rem; max-width: 700px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0;">${cert.referencia}</h3>
+            <p style="margin: 0.25rem 0 0; color: #6b7280; font-size: 0.875rem;">${cert.produtor_nome || 'Produtor'}</p>
+          </div>
+          <span style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background: ${color}; color: #fff;">${cert.estado}</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <label style="font-size: 0.75rem; color: #6b7280;">Produto</label>
+            <div style="font-weight: 500;">${cert.produto}</div>
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; color: #6b7280;">Quantidade (kg)</label>
+            <div style="font-weight: 500;">${cert.quantidade_kg}</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <label style="font-size: 0.75rem; color: #6b7280;">Número do Lote</label>
+            <div style="font-weight: 500;">${cert.numero_lote || 'N/A'}</div>
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; color: #6b7280;">País de Destino</label>
+            <div style="font-weight: 500;">${cert.pais_destino}</div>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size: 0.75rem; color: #6b7280;">Data de Exportação</label>
+          <div style="font-weight: 500;">${new Date(cert.data_exportacao).toLocaleDateString('pt-PT')}</div>
+        </div>
+
+        ${cert.observacoes ? `
+          <div>
+            <label style="font-size: 0.75rem; color: #6b7280;">Observações</label>
+            <div style="padding: 0.75rem; background: #f9fafb; border-radius: 4px;">${cert.observacoes}</div>
+          </div>
+        ` : ''}
+
+        ${cert.estado === 'pendente' ? `
+          <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <button class="btn btn-success" onclick="emitirCertificado(${cert.id}); closeModal();">Emitir</button>
+            <button class="btn btn-danger" onclick="rejeitarCertificado(${cert.id}); closeModal();">Rejeitar</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    modalOverlay.classList.remove('hidden');
+  } catch (error) {
+    console.error('Erro ao carregar certificado:', error);
+    alert('Erro: ' + error.message);
+  }
+}
+
+// Gerenciar abas de certificados
+function showCertificadosTab(tab) {
+  // Atualizar botões
+  document.getElementById('btnCertPendentes').style.background = tab === 'pendentes' ? 'var(--primary)' : 'var(--gray-300)';
+  document.getElementById('btnCertPendentes').style.color = tab === 'pendentes' ? 'white' : 'var(--gray-700)';
+  document.getElementById('btnCertEmitidos').style.background = tab === 'emitidos' ? 'var(--primary)' : 'var(--gray-300)';
+  document.getElementById('btnCertEmitidos').style.color = tab === 'emitidos' ? 'white' : 'var(--gray-700)';
+  document.getElementById('btnCertRejeitados').style.background = tab === 'rejeitados' ? 'var(--primary)' : 'var(--gray-300)';
+  document.getElementById('btnCertRejeitados').style.color = tab === 'rejeitados' ? 'white' : 'var(--gray-700)';
+
+  // Mostrar/ocultar cards
+  document.getElementById('cardCertPendentes').classList.toggle('hidden', tab !== 'pendentes');
+  document.getElementById('cardCertEmitidos').classList.toggle('hidden', tab !== 'emitidos');
+  document.getElementById('cardCertRejeitados').classList.toggle('hidden', tab !== 'rejeitados');
+
+  // Carregar dados
+  if (tab === 'pendentes') {
+    loadCertificados();
+  } else if (tab === 'emitidos') {
+    loadCertificadosEmitidos();
+  } else if (tab === 'rejeitados') {
+    loadCertificadosRejeitados();
+  }
+}
+
+async function loadCertificadosEmitidos() {
+  const container = document.getElementById('tableCertEmitidos');
+  const loading = document.getElementById('loadingCertEmitidos');
+
+  try {
+    const data = await apiCall('/certificados?estado=emitido');
+    loading.classList.add('hidden');
+
+    if (data.certificados.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum certificado emitido</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Referência</th><th>Produtor</th><th>Produto</th><th>Quantidade (kg)</th><th>Destino</th><th>Data Exportação</th><th>Emitido em</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.certificados.forEach(c => {
+      html += `<tr>
+        <td><strong>${c.referencia}</strong></td>
+        <td>${c.produtor_nome || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
+        <td>${c.produto}</td>
+        <td>${c.quantidade_kg.toLocaleString('pt-PT')}</td>
+        <td>${c.pais_destino}</td>
+        <td>${new Date(c.data_exportacao).toLocaleDateString('pt-PT')}</td>
+        <td>${new Date(c.criado_em).toLocaleDateString('pt-PT')}</td>
+        <td class="actions">
+          <button class="btn btn-primary btn-sm" style="background: var(--primary); color: white; white-space: nowrap;" onclick="viewCertificadoAdmin('${c.referencia}')">Ver</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+async function loadCertificadosRejeitados() {
+  const container = document.getElementById('tableCertRejeitados');
+  const loading = document.getElementById('loadingCertRejeitados');
+
+  try {
+    const data = await apiCall('/certificados?estado=rejeitado');
+    loading.classList.add('hidden');
+
+    if (data.certificados.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum certificado rejeitado</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Referência</th><th>Produtor</th><th>Produto</th><th>Quantidade (kg)</th><th>Destino</th><th>Observações</th><th>Data</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.certificados.forEach(c => {
+      html += `<tr>
+        <td><strong>${c.referencia}</strong></td>
+        <td>${c.produtor_nome || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
+        <td>${c.produto}</td>
+        <td>${c.quantidade_kg.toLocaleString('pt-PT')}</td>
+        <td>${c.pais_destino}</td>
+        <td>${c.observacoes || '-'}</td>
+        <td>${new Date(c.criado_em).toLocaleDateString('pt-PT')}</td>
+        <td class="actions">
+          <button class="btn btn-primary btn-sm" onclick="viewCertificadoAdmin('${c.referencia}')">Ver</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  APOIOS
+// ══════════════════════════════════════════════════════════
+
+async function loadApoios() {
+  const container = document.getElementById('tableApoios');
+  const loading = document.getElementById('loadingApoios');
+
+  try {
+    const data = await apiCall('/apoios/pendentes');
+    loading.classList.add('hidden');
+
+    if (data.apoios.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum pedido de apoio pendente</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Referência</th><th>Produtor</th><th>Tipo</th><th>Fileira</th><th>Valor Estimado</th><th>Data</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.apoios.forEach(a => {
+      html += `<tr>
+        <td><strong>${a.referencia}</strong></td>
+        <td>${a.produtor_nome || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
+        <td>${a.tipo}</td>
+        <td>${a.fileira}</td>
+        <td>${a.valor_estimado ? a.valor_estimado.toLocaleString('pt-PT') + ' AOA' : '-'}</td>
+        <td>${new Date(a.criado_em).toLocaleDateString('pt-PT')}</td>
+        <td class="actions">
+          <button class="btn btn-success btn-sm" onclick="aprovarApoio(${a.id})">Aprovar</button>
+          <button class="btn btn-danger btn-sm" onclick="rejeitarApoio(${a.id})">Rejeitar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+async function aprovarApoio(id) {
+  if (!confirm('Aprovar este pedido de apoio?')) return;
+  
+  try {
+    await apiCall(`/apoios/${id}/aprovar`, { method: 'PUT' });
+    alert('Pedido aprovado com sucesso!');
+    loadApoios();
+    loadDashboard();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function rejeitarApoio(id) {
+  if (!confirm('Rejeitar este pedido de apoio?')) return;
+  
+  try {
+    await apiCall(`/apoios/${id}/rejeitar`, { method: 'PUT' });
+    alert('Pedido rejeitado.');
+    loadApoios();
+    loadDashboard();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+// Gerenciar abas de apoios
+function showApoiosTab(tab) {
+  // Atualizar botões
+  document.getElementById('btnApoiosAnalise').style.background = tab === 'analise' ? 'var(--primary)' : 'var(--gray-300)';
+  document.getElementById('btnApoiosAnalise').style.color = tab === 'analise' ? 'white' : 'var(--gray-700)';
+  document.getElementById('btnApoiosAprovados').style.background = tab === 'aprovados' ? 'var(--primary)' : 'var(--gray-300)';
+  document.getElementById('btnApoiosAprovados').style.color = tab === 'aprovados' ? 'white' : 'var(--gray-700)';
+  document.getElementById('btnApoiosRejeitados').style.background = tab === 'rejeitados' ? 'var(--primary)' : 'var(--gray-300)';
+  document.getElementById('btnApoiosRejeitados').style.color = tab === 'rejeitados' ? 'white' : 'var(--gray-700)';
+
+  // Mostrar/ocultar cards
+  document.getElementById('cardApoiosAnalise').classList.toggle('hidden', tab !== 'analise');
+  document.getElementById('cardApoiosAprovados').classList.toggle('hidden', tab !== 'aprovados');
+  document.getElementById('cardApoiosRejeitados').classList.toggle('hidden', tab !== 'rejeitados');
+
+  // Carregar dados
+  if (tab === 'analise') {
+    loadApoios();
+  } else if (tab === 'aprovados') {
+    loadApoiosAprovados();
+  } else if (tab === 'rejeitados') {
+    loadApoiosRejeitados();
+  }
+}
+
+async function loadApoiosAprovados() {
+  const container = document.getElementById('tableApoiosAprovados');
+  const loading = document.getElementById('loadingApoiosAprovados');
+
+  try {
+    const data = await apiCall('/apoios?estado=aprovado');
+    loading.classList.add('hidden');
+
+    if (data.apoios.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum pedido aprovado</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Referência</th><th>Produtor</th><th>Tipo</th><th>Fileira</th><th>Valor Estimado</th><th>Descrição</th><th>Data</th>';
+    html += '</tr></thead><tbody>';
+
+    data.apoios.forEach(a => {
+      html += `<tr>
+        <td><strong>${a.referencia}</strong></td>
+        <td>${a.produtor_nome || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
+        <td>${a.tipo}</td>
+        <td>${a.fileira}</td>
+        <td>${a.valor_estimado ? a.valor_estimado.toLocaleString('pt-PT') + ' AOA' : '-'}</td>
+        <td>${a.descricao ? a.descricao.substring(0, 50) + '...' : '-'}</td>
+        <td>${new Date(a.criado_em).toLocaleDateString('pt-PT')}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+async function loadApoiosRejeitados() {
+  const container = document.getElementById('tableApoiosRejeitados');
+  const loading = document.getElementById('loadingApoiosRejeitados');
+
+  try {
+    const data = await apiCall('/apoios?estado=rejeitado');
+    loading.classList.add('hidden');
+
+    if (data.apoios.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum pedido rejeitado</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Referência</th><th>Produtor</th><th>Tipo</th><th>Fileira</th><th>Valor Estimado</th><th>Descrição</th><th>Data</th>';
+    html += '</tr></thead><tbody>';
+
+    data.apoios.forEach(a => {
+      html += `<tr>
+        <td><strong>${a.referencia}</strong></td>
+        <td>${a.produtor_nome || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
+        <td>${a.tipo}</td>
+        <td>${a.fileira}</td>
+        <td>${a.valor_estimado ? a.valor_estimado.toLocaleString('pt-PT') + ' AOA' : '-'}</td>
+        <td>${a.descricao ? a.descricao.substring(0, 50) + '...' : '-'}</td>
+        <td>${new Date(a.criado_em).toLocaleDateString('pt-PT')}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  LOGS
+// ══════════════════════════════════════════════════════════
+
+async function loadLogs() {
+  const container = document.getElementById('tableLogs');
+  const loading = document.getElementById('loadingLogs');
+
+  try {
+    const data = await apiCall('/logs');
+    loading.classList.add('hidden');
+
+    if (data.logs.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum log registado</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Data/Hora</th><th>Admin</th><th>Ação</th><th>Entidade</th><th>Detalhes</th>';
+    html += '</tr></thead><tbody>';
+
+    data.logs.forEach(l => {
+      const date = new Date(l.criado_em);
+      html += `<tr>
+        <td>${date.toLocaleDateString('pt-PT')} ${date.toLocaleTimeString('pt-PT')}</td>
+        <td>${l.admin_nome}<br><small>${l.admin_email}</small></td>
+        <td><strong>${l.acao}</strong></td>
+        <td>${l.entidade} #${l.entidade_id || '-'}</td>
+        <td>${l.detalhes || '-'}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  GESTÃO DE CONTEÚDO - ARTIGOS
+// ══════════════════════════════════════════════════════════
+
+let editingArtigoId = null;
+
+async function loadArtigos() {
+  const container = document.getElementById('tableArtigos');
+  const loading = document.getElementById('loadingArtigos');
+
+  try {
+    const [artigos, categorias] = await Promise.all([
+      apiCall('/artigos'),
+      apiCall('/categorias')
+    ]);
+    
+    const select = document.getElementById('artigoCategoria');
+    select.innerHTML = '<option value="">Selecionar categoria</option>';
+    categorias.categorias.forEach(c => {
+      select.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+    });
+    
+    loading.classList.add('hidden');
+
+    if (artigos.artigos.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum artigo criado</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Título</th><th>Categoria</th><th>Estado</th><th>Destaque</th><th>Visualizações</th><th>Data</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    artigos.artigos.forEach(a => {
+      const estadoBadge = a.estado === 'publicado' ? 'badge-active' : a.estado === 'rascunho' ? 'badge-pending' : 'badge-inactive';
+      html += `<tr>
+        <td><strong>${a.titulo}</strong></td>
+        <td>${a.categoria_nome || '-'}</td>
+        <td><span class="badge-status ${estadoBadge}">${a.estado}</span></td>
+        <td>${a.destaque ? '⭐' : '-'}</td>
+        <td>${a.visualizacoes || 0}</td>
+        <td>${new Date(a.criado_em).toLocaleDateString('pt-PT')}</td>
+        <td class="actions">
+          <button class="btn btn-sm" style="background: var(--info); color: white;" onclick="editarArtigo(${a.id})">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarArtigo(${a.id})">Eliminar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+function showNovoArtigoModal() {
+  editingArtigoId = null;
+  document.getElementById('modalArtigoTitle').textContent = 'Novo Artigo';
+  document.getElementById('formArtigo').reset();
+  document.getElementById('modalArtigo').classList.remove('hidden');
+}
+
+async function editarArtigo(id) {
+  try {
+    const data = await apiCall(`/artigos/${id}`);
+    editingArtigoId = id;
+    
+    document.getElementById('modalArtigoTitle').textContent = 'Editar Artigo';
+    document.getElementById('artigoTitulo').value = data.titulo || '';
+    document.getElementById('artigoTituloEn').value = data.titulo_en || '';
+    document.getElementById('artigoResumo').value = data.resumo || '';
+    document.getElementById('artigoResumoEn').value = data.resumo_en || '';
+    document.getElementById('artigoConteudo').value = data.conteudo || '';
+    document.getElementById('artigoConteudoEn').value = data.conteudo_en || '';
+    document.getElementById('artigoCategoria').value = data.categoria_id || '';
+    document.getElementById('artigoImagem').value = data.imagem_destaque || '';
+    document.getElementById('artigoTags').value = data.tags || '';
+    document.getElementById('artigoDestaque').checked = data.destaque;
+    document.getElementById('artigoEstado').value = data.estado;
+    
+    document.getElementById('modalArtigo').classList.remove('hidden');
+  } catch (err) {
+    alert('Erro ao carregar artigo: ' + err.message);
+  }
+}
+
+async function salvarArtigo() {
+  const titulo = document.getElementById('artigoTitulo').value;
+  const titulo_en = document.getElementById('artigoTituloEn').value;
+  const resumo = document.getElementById('artigoResumo').value;
+  const resumo_en = document.getElementById('artigoResumoEn').value;
+  const conteudo = document.getElementById('artigoConteudo').value;
+  const conteudo_en = document.getElementById('artigoConteudoEn').value;
+  const categoria_id = document.getElementById('artigoCategoria').value;
+  const imagem_destaque = document.getElementById('artigoImagem').value;
+  const tags = document.getElementById('artigoTags').value;
+  const destaque = document.getElementById('artigoDestaque').checked;
+  const estado = document.getElementById('artigoEstado').value;
+
+  if (!titulo || !conteudo) {
+    alert('Título e conteúdo em português são obrigatórios');
+    return;
+  }
+
+  if (!titulo_en || !conteudo_en) {
+    alert('Título e conteúdo em inglês são obrigatórios');
+    return;
+  }
+
+  try {
+    const body = { titulo, titulo_en, resumo, resumo_en, conteudo, conteudo_en, categoria_id: categoria_id || null, imagem_destaque, tags, destaque, estado };
+    
+    if (editingArtigoId) {
+      await apiCall(`/artigos/${editingArtigoId}`, { method: 'PUT', body: JSON.stringify(body) });
+      alert('Artigo atualizado com sucesso!');
+    } else {
+      await apiCall('/artigos', { method: 'POST', body: JSON.stringify(body) });
+      alert('Artigo criado com sucesso!');
+    }
+    
+    closeArtigoModal();
+    loadArtigos();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function eliminarArtigo(id) {
+  if (!confirm('Eliminar este artigo permanentemente?')) return;
+  
+  try {
+    await apiCall(`/artigos/${id}`, { method: 'DELETE' });
+    alert('Artigo eliminado.');
+    loadArtigos();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+function closeArtigoModal() {
+  document.getElementById('modalArtigo').classList.add('hidden');
+  editingArtigoId = null;
+}
+
+// ══════════════════════════════════════════════════════════
+//  GESTÃO DE CONTEÚDO - ANÚNCIOS
+// ══════════════════════════════════════════════════════════
+
+let editingAnuncioId = null;
+
+async function loadAnuncios() {
+  const container = document.getElementById('tableAnuncios');
+  const loading = document.getElementById('loadingAnuncios');
+
+  try {
+    const data = await apiCall('/anuncios');
+    loading.classList.add('hidden');
+
+    if (data.anuncios.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum anúncio criado</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Título</th><th>Tipo</th><th>Estado</th><th>Período</th><th>Criado por</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.anuncios.forEach(a => {
+      const tipoColor = a.tipo === 'urgente' ? 'var(--danger)' : a.tipo === 'aviso' ? 'var(--warning)' : a.tipo === 'sucesso' ? 'var(--success)' : 'var(--info)';
+      const periodo = `${new Date(a.data_inicio).toLocaleDateString('pt-PT')} - ${a.data_fim ? new Date(a.data_fim).toLocaleDateString('pt-PT') : '∞'}`;
+      
+      html += `<tr>
+        <td><strong>${a.titulo}</strong></td>
+        <td><span style="color: ${tipoColor}; font-weight: 600;">${a.tipo}</span></td>
+        <td><span class="badge-status ${a.activo ? 'badge-active' : 'badge-inactive'}">${a.activo ? 'Activo' : 'Inactivo'}</span></td>
+        <td><small>${periodo}</small></td>
+        <td>${a.criado_por_nome || '-'}</td>
+        <td class="actions">
+          <button class="btn btn-sm" style="background: var(--info); color: white;" onclick="editarAnuncio(${a.id})">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarAnuncio(${a.id})">Eliminar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+function showNovoAnuncioModal() {
+  editingAnuncioId = null;
+  document.getElementById('modalAnuncioTitle').textContent = 'Novo Anúncio';
+  document.getElementById('formAnuncio').reset();
+  document.getElementById('modalAnuncio').classList.remove('hidden');
+}
+
+async function editarAnuncio(id) {
+  try {
+    const data = await apiCall(`/anuncios?limit=100`);
+    const anuncio = data.anuncios.find(a => a.id === id);
+    if (!anuncio) throw new Error('Anúncio não encontrado');
+    
+    editingAnuncioId = id;
+    
+    document.getElementById('modalAnuncioTitle').textContent = 'Editar Anúncio';
+    document.getElementById('anuncioTitulo').value = anuncio.titulo || '';
+    document.getElementById('anuncioTituloEn').value = anuncio.titulo_en || '';
+    document.getElementById('anuncioMensagem').value = anuncio.mensagem || '';
+    document.getElementById('anuncioMensagemEn').value = anuncio.mensagem_en || '';
+    document.getElementById('anuncioTipo').value = anuncio.tipo;
+    document.getElementById('anuncioLinkUrl').value = anuncio.link_url || '';
+    document.getElementById('anuncioLinkTexto').value = anuncio.link_texto || '';
+    document.getElementById('anuncioLinkTextoEn').value = anuncio.link_texto_en || '';
+    document.getElementById('anuncioActivo').checked = anuncio.activo;
+    
+    if (anuncio.data_inicio) {
+      document.getElementById('anuncioDataInicio').value = new Date(anuncio.data_inicio).toISOString().slice(0, 16);
+    }
+    if (anuncio.data_fim) {
+      document.getElementById('anuncioDataFim').value = new Date(anuncio.data_fim).toISOString().slice(0, 16);
+    }
+    
+    document.getElementById('modalAnuncio').classList.remove('hidden');
+  } catch (err) {
+    alert('Erro ao carregar anúncio: ' + err.message);
+  }
+}
+
+async function salvarAnuncio() {
+  const titulo = document.getElementById('anuncioTitulo').value;
+  const titulo_en = document.getElementById('anuncioTituloEn').value;
+  const mensagem = document.getElementById('anuncioMensagem').value;
+  const mensagem_en = document.getElementById('anuncioMensagemEn').value;
+  const tipo = document.getElementById('anuncioTipo').value;
+  const link_url = document.getElementById('anuncioLinkUrl').value;
+  const link_texto = document.getElementById('anuncioLinkTexto').value;
+  const link_texto_en = document.getElementById('anuncioLinkTextoEn').value;
+  const activo = document.getElementById('anuncioActivo').checked;
+  const data_inicio = document.getElementById('anuncioDataInicio').value;
+  const data_fim = document.getElementById('anuncioDataFim').value;
+
+  if (!titulo || !mensagem) {
+    alert('Título e mensagem em português são obrigatórios');
+    return;
+  }
+
+  if (!titulo_en || !mensagem_en) {
+    alert('Título e mensagem em inglês são obrigatórios');
+    return;
+  }
+
+  try {
+    const body = { titulo, titulo_en, mensagem, mensagem_en, tipo, link_url, link_texto, link_texto_en, activo, data_inicio, data_fim };
+    
+    if (editingAnuncioId) {
+      await apiCall(`/anuncios/${editingAnuncioId}`, { method: 'PUT', body: JSON.stringify(body) });
+      alert('Anúncio atualizado com sucesso!');
+    } else {
+      await apiCall('/anuncios', { method: 'POST', body: JSON.stringify(body) });
+      alert('Anúncio criado com sucesso!');
+    }
+    
+    closeAnuncioModal();
+    loadAnuncios();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function eliminarAnuncio(id) {
+  if (!confirm('Eliminar este anúncio permanentemente?')) return;
+  
+  try {
+    await apiCall(`/anuncios/${id}`, { method: 'DELETE' });
+    alert('Anúncio eliminado.');
+    loadAnuncios();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+function closeAnuncioModal() {
+  document.getElementById('modalAnuncio').classList.add('hidden');
+  editingAnuncioId = null;
+}
+
+// ══════════════════════════════════════════════════════════
+//  GESTÃO DE CONTEÚDO - FAQ
+// ══════════════════════════════════════════════════════════
+
+let editingFaqId = null;
+
+async function loadFaq() {
+  const container = document.getElementById('tableFaq');
+  const loading = document.getElementById('loadingFaq');
+
+  try {
+    const data = await apiCall('/faq');
+    loading.classList.add('hidden');
+
+    if (data.faq.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhuma pergunta criada</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Ordem</th><th>Pergunta</th><th>Categoria</th><th>Estado</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.faq.forEach(f => {
+      html += `<tr>
+        <td>${f.ordem}</td>
+        <td><strong>${f.pergunta}</strong><br><small>${f.resposta.substring(0, 100)}...</small></td>
+        <td>${f.categoria || '-'}</td>
+        <td><span class="badge-status ${f.activo ? 'badge-active' : 'badge-inactive'}">${f.activo ? 'Activo' : 'Inactivo'}</span></td>
+        <td class="actions">
+          <button class="btn btn-sm" style="background: var(--info); color: white;" onclick="editarFaq(${f.id})">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarFaq(${f.id})">Eliminar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+function showNovoFaqModal() {
+  editingFaqId = null;
+  document.getElementById('modalFaqTitle').textContent = 'Nova Pergunta';
+  document.getElementById('formFaq').reset();
+  document.getElementById('modalFaq').classList.remove('hidden');
+}
+
+async function editarFaq(id) {
+  try {
+    const data = await apiCall('/faq');
+    const faq = data.faq.find(f => f.id === id);
+    if (!faq) throw new Error('FAQ não encontrado');
+    
+    editingFaqId = id;
+    
+    document.getElementById('modalFaqTitle').textContent = 'Editar Pergunta';
+    document.getElementById('faqPergunta').value = faq.pergunta;
+    document.getElementById('faqResposta').value = faq.resposta;
+    document.getElementById('faqCategoria').value = faq.categoria || '';
+    document.getElementById('faqOrdem').value = faq.ordem;
+    document.getElementById('faqActivo').checked = faq.activo;
+    
+    document.getElementById('modalFaq').classList.remove('hidden');
+  } catch (err) {
+    alert('Erro ao carregar FAQ: ' + err.message);
+  }
+}
+
+async function salvarFaq() {
+  const pergunta = document.getElementById('faqPergunta').value;
+  const resposta = document.getElementById('faqResposta').value;
+  const categoria = document.getElementById('faqCategoria').value;
+  const ordem = parseInt(document.getElementById('faqOrdem').value);
+  const activo = document.getElementById('faqActivo').checked;
+
+  if (!pergunta || !resposta) {
+    alert('Pergunta e resposta são obrigatórios');
+    return;
+  }
+
+  try {
+    const body = { pergunta, resposta, categoria, ordem, activo };
+    
+    if (editingFaqId) {
+      await apiCall(`/faq/${editingFaqId}`, { method: 'PUT', body: JSON.stringify(body) });
+      alert('FAQ atualizado com sucesso!');
+    } else {
+      await apiCall('/faq', { method: 'POST', body: JSON.stringify(body) });
+      alert('FAQ criado com sucesso!');
+    }
+    
+    closeFaqModal();
+    loadFaq();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function eliminarFaq(id) {
+  if (!confirm('Eliminar esta pergunta permanentemente?')) return;
+  
+  try {
+    await apiCall(`/faq/${id}`, { method: 'DELETE' });
+    alert('FAQ eliminado.');
+    loadFaq();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+function closeFaqModal() {
+  document.getElementById('modalFaq').classList.add('hidden');
+  editingFaqId = null;
+}
+
+// ══════════════════════════════════════════════════════════
+//  PROJECTOS
+// ══════════════════════════════════════════════════════════
+
+let editingProjectoId = null;
+
+async function loadProjectos() {
+  const loading = document.getElementById('loadingProjectos');
+  const container = document.getElementById('tableProjectos');
+  
+  loading.innerHTML = '<div class="spinner"></div><p>A carregar...</p>';
+  loading.classList.remove('hidden');
+  container.classList.add('hidden');
+  
+  try {
+    const data = await apiCall('/projectos');
+    
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Nome</th><th>Fileira</th><th>Coordenador</th><th>Estado</th><th>Início</th><th>Conclusão</th><th>Investimento</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.projectos.forEach(p => {
+      const statusClass = p.status === 'em_execucao' ? 'badge-active' : 
+                         p.status === 'concluido' ? 'badge-emitted' : 
+                         p.status === 'em_planeamento' ? 'badge-pending' : 'badge-inactive';
+      
+      html += `<tr>
+        <td><strong>${p.logo_emoji || '📋'} ${p.nome}</strong><br><small>${p.descricao.substring(0, 100)}...</small></td>
+        <td>${p.fileira || '-'}</td>
+        <td>${p.coordenador || '-'}</td>
+        <td><span class="badge-status ${statusClass}">${p.status.replace('_', ' ').charAt(0).toUpperCase() + p.status.replace('_', ' ').slice(1)}</span></td>
+        <td>${p.ano_inicio || '-'}</td>
+        <td>${p.ano_conclusao || '-'}</td>
+        <td>${p.investimento_usd ? Number(p.investimento_usd).toLocaleString('en-US', {style: 'currency', currency: 'USD'}) : '-'}</td>
+        <td class="actions">
+          <button class="btn btn-sm" style="background: var(--info); color: white;" onclick="editarProjecto(${p.id})">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarProjecto(${p.id})">Eliminar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+    loading.classList.add('hidden'); // Hide loading spinner
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+function showNovoProjectoModal() {
+  editingProjectoId = null;
+  document.getElementById('modalProjectoTitle').textContent = 'Novo Projecto';
+  document.getElementById('formProjecto').reset();
+  document.getElementById('modalProjecto').classList.remove('hidden');
+}
+
+async function editarProjecto(id) {
+  try {
+    const data = await apiCall('/projectos');
+    const projecto = data.projectos.find(p => p.id === id);
+    if (!projecto) throw new Error('Projecto não encontrado');
+    
+    editingProjectoId = id;
+    
+    document.getElementById('modalProjectoTitle').textContent = 'Editar Projecto';
+    document.getElementById('projectoNome').value = projecto.nome || '';
+    document.getElementById('projectoNomeEn').value = projecto.nome_en || '';
+    document.getElementById('projectoDescricao').value = projecto.descricao || '';
+    document.getElementById('projectoDescricaoEn').value = projecto.descricao_en || '';
+    document.getElementById('projectoFileira').value = projecto.fileira || '';
+    document.getElementById('projectoInvestimento').value = projecto.investimento_usd || '';
+    document.getElementById('projectoHectares').value = projecto.hectares || '';
+    document.getElementById('projectoProdutores').value = projecto.produtores_capacitar || '';
+    document.getElementById('projectoCapacidade').value = projecto.capacidade_anual_t || '';
+    document.getElementById('projectoEstado').value = projecto.status || 'em_planeamento';
+    document.getElementById('projectoAnoInicio').value = projecto.ano_inicio || '';
+    document.getElementById('projectoAnoConclusao').value = projecto.ano_conclusao || '';
+    document.getElementById('projectoCoordenador').value = projecto.coordenador || '';
+    document.getElementById('projectoTelefone').value = projecto.telefone_coordenador || '';
+    document.getElementById('projectoEmail').value = projecto.email_coordenador || '';
+    document.getElementById('projectoProvincias').value = projecto.provincias || '';
+    document.getElementById('projectoTecnologias').value = projecto.tecnologias || '';
+    document.getElementById('projectoMercados').value = projecto.mercados_exportacao || '';
+    document.getElementById('projectoEmoji').value = projecto.logo_emoji || '📋';
+    document.getElementById('projectoCor').value = projecto.cor_tema || '#C49A3C';
+    
+    document.getElementById('modalProjecto').classList.remove('hidden');
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function salvarProjecto() {
+  const nome = document.getElementById('projectoNome').value.trim();
+  const nome_en = document.getElementById('projectoNomeEn').value.trim();
+  const descricao = document.getElementById('projectoDescricao').value.trim();
+  const descricao_en = document.getElementById('projectoDescricaoEn').value.trim();
+  const fileira = document.getElementById('projectoFileira').value;
+  const investimento_usd = document.getElementById('projectoInvestimento').value;
+  const hectares = document.getElementById('projectoHectares').value;
+  const produtores_capacitar = document.getElementById('projectoProdutores').value;
+  const capacidade_anual_t = document.getElementById('projectoCapacidade').value;
+  const status = document.getElementById('projectoEstado').value;
+  const ano_inicio = document.getElementById('projectoAnoInicio').value;
+  const ano_conclusao = document.getElementById('projectoAnoConclusao').value;
+  const coordenador = document.getElementById('projectoCoordenador').value.trim();
+  const telefone_coordenador = document.getElementById('projectoTelefone').value.trim();
+  const email_coordenador = document.getElementById('projectoEmail').value.trim();
+  const provincias = document.getElementById('projectoProvincias').value.trim();
+  const tecnologias = document.getElementById('projectoTecnologias').value.trim();
+  const mercados_exportacao = document.getElementById('projectoMercados').value.trim();
+  const logo_emoji = document.getElementById('projectoEmoji').value || '📋';
+  const cor_tema = document.getElementById('projectoCor').value || '#C49A3C';
+  
+  // Debug logging
+  console.log('Form data:', {
+    nome: nome || 'EMPTY',
+    nome_en: nome_en || 'EMPTY',
+    descricao: descricao || 'EMPTY',
+    descricao_en: descricao_en || 'EMPTY'
+  });
+  
+  if (!nome || !descricao) {
+    alert('Preencha o nome e descrição em português!');
+    return;
+  }
+  
+  if (!nome_en || !descricao_en) {
+    alert('Preencha o nome e descrição em inglês!');
+    return;
+  }
+  
+  try {
+    const body = {
+      nome,
+      nome_en,
+      descricao,
+      descricao_en,
+      fileira,
+      investimento_usd: investimento_usd ? Number(investimento_usd) : 0,
+      hectares: hectares ? Number(hectares) : 0,
+      produtores_capacitar: produtores_capacitar ? Number(produtores_capacitar) : 0,
+      capacidade_anual_t: capacidade_anual_t ? Number(capacidade_anual_t) : 0,
+      status,
+      ano_inicio: ano_inicio ? Number(ano_inicio) : new Date().getFullYear(),
+      ano_conclusao: ano_conclusao ? Number(ano_conclusao) : new Date().getFullYear() + 3,
+      coordenador,
+      telefone_coordenador,
+      email_coordenador,
+      provincias,
+      tecnologias,
+      mercados_exportacao,
+      logo_emoji,
+      cor_tema
+    };
+    
+    console.log('Sending body:', body);
+    
+    if (editingProjectoId) {
+      await apiCall(`/projectos/${editingProjectoId}`, { method: 'PUT', body: JSON.stringify(body) });
+      alert('Projecto atualizado com sucesso!');
+    } else {
+      await apiCall('/projectos', { method: 'POST', body: JSON.stringify(body) });
+      alert('Projecto criado com sucesso!');
+    }
+    
+    closeProjectoModal();
+    loadProjectos();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function eliminarProjecto(id) {
+  if (!confirm('Eliminar este projecto permanentemente?')) return;
+  
+  try {
+    await apiCall(`/projectos/${id}`, { method: 'DELETE' });
+    alert('Projecto eliminado.');
+    loadProjectos();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+function closeProjectoModal() {
+  document.getElementById('modalProjecto').classList.add('hidden');
+  editingProjectoId = null;
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════════════════
+
+function closeModal() {
+  document.getElementById('modalDetalhes').classList.add('hidden');
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+
+if (token) {
+  showAdminPanel();
+}
+</script>
+
+</body>
+</html>

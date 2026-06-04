@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Reset API</title>
+</head>
+<body>
+    <h1>Test Reset API</h1>
+    <button onclick="testReset()">Testar Reset</button>
+    <div id="result"></div>
+
+    <script>
+        async function testReset() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // Testar solicitação de reset
+                const response1 = await fetch('/api/reset-solicitar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        nbi: 'DEMO-006-UIG-2026', 
+                        email: 'joao@example.com' 
+                    })
+                });
+
+                const data1 = await response1.json();
+                resultDiv.innerHTML += '<h3>1. Solicitação de Reset:</h3><pre>' + JSON.stringify(data1, null, 2) + '</pre>';
+
+                if (data1.success && data1.demoToken) {
+                    // Testar verificação de token
+                    const response2 = await fetch(`/api/reset-verificar?token=${data1.demoToken}&nbi=DEMO-006-UIG-2026`);
+                    const data2 = await response2.json();
+                    resultDiv.innerHTML += '<h3>2. Verificação de Token:</h3><pre>' + JSON.stringify(data2, null, 2) + '</pre>';
+
+                    if (data2.success) {
+                        // Testar confirmação de reset
+                        const response3 = await fetch('/api/reset-confirmar', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ 
+                                token: data1.demoToken, 
+                                nbi: 'DEMO-006-UIG-2026', 
+                                novoPin: '654321' 
+                            })
+                        });
+
+                        const data3 = await response3.json();
+                        resultDiv.innerHTML += '<h3>3. Confirmação de Reset:</h3><pre>' + JSON.stringify(data3, null, 2) + '</pre>';
+                    }
+                }
+            } catch (error) {
+                resultDiv.innerHTML += '<h3>Erro:</h3><pre>' + error.message + '</pre>';
+            }
+        }
+    </script>
+</body>
+</html>

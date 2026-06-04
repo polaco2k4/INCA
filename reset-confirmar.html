@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmar Reset — Portal INCA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --espresso:   #1A0A00;
+    --roast:      #3B1A08;
+    --mahogany:   #6B3520;
+    --gold:       #C49A3C;
+    --cream:      #F5EFE0;
+    --parchment:  #EDE4CC;
+    --ivory:      #FAF7F0;
+    --moss:       #2C4A2E;
+    --sage:       #5A7A5C;
+    --slate:      #3D3D3D;
+    --mid:        #7A7A72;
+    --light-rule: rgba(100,70,40,.12);
+    --serif: 'Playfair Display', Georgia, serif;
+    --body:  'Libre Baskerville', Georgia, serif;
+    --sans:  'Source Sans 3', sans-serif;
+    --transition: .35s cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    background: var(--ivory);
+    color: var(--espresso);
+    font-family: var(--body);
+    line-height: 1.7;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .confirm-header {
+    background: rgba(26,10,0,.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(196,154,60,.25);
+    padding: 1rem 4vw;
+    position: relative;
+    z-index: 10;
+  }
+
+  .header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 14px; text-decoration: none;
+  }
+
+  .logo-emblem {
+    width: 40px; height: 40px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    line-height: 1.2;
+  }
+
+  .logo-text .abbr {
+    display: block;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: .08em;
+  }
+
+  .logo-text .full {
+    display: block;
+    font-family: var(--sans);
+    font-size: .6rem;
+    color: rgba(245,239,224,.6);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .back-link {
+    color: rgba(245,239,224,.6);
+    text-decoration: none;
+    font-family: var(--sans);
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    transition: color var(--transition);
+  }
+
+  .back-link:hover {
+    color: var(--gold);
+  }
+
+  /* Main Content */
+  .confirm-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 4vw;
+    background: 
+      radial-gradient(ellipse 80% 60% at 70% 50%, rgba(59,26,8,.1) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 80% at 20% 80%, rgba(44,74,46,.05) 0%, transparent 50%);
+  }
+
+  .confirm-card {
+    background: white;
+    border: 1px solid var(--light-rule);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 24px 80px rgba(26,10,0,.15);
+    overflow: hidden;
+  }
+
+  .confirm-header-card {
+    background: var(--espresso);
+    padding: 2rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(196,154,60,.2);
+  }
+
+  .confirm-icon {
+    width: 60px; height: 60px;
+    background: rgba(196,154,60,.15);
+    border: 2px solid rgba(196,154,60,.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+  }
+
+  .confirm-title {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: .5rem;
+  }
+
+  .confirm-subtitle {
+    font-family: var(--sans);
+    font-size: .85rem;
+    color: rgba(245,239,224,.6);
+  }
+
+  .confirm-body {
+    padding: 2.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-family: var(--sans);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--mahogany);
+    margin-bottom: .5rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 1rem;
+    background: var(--cream);
+    border: 1px solid rgba(100,70,40,.15);
+    border-radius: 2px;
+    font-family: var(--body);
+    font-size: 1rem;
+    color: var(--espresso);
+    outline: none;
+    transition: var(--transition);
+  }
+
+  .form-control:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(196,154,60,.1);
+  }
+
+  .form-control:disabled {
+    background: var(--ivory);
+    cursor: not-allowed;
+  }
+
+  .form-hint {
+    font-family: var(--sans);
+    font-size: .75rem;
+    color: var(--mid);
+    margin-top: .5rem;
+  }
+
+  .token-display {
+    background: var(--parchment);
+    border: 1px solid var(--light-rule);
+    border-radius: 2px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-family: monospace;
+    font-size: .9rem;
+    word-break: break-all;
+    text-align: center;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 2px;
+    font-family: var(--sans);
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--espresso);
+  }
+
+  .btn-primary:hover {
+    background: #d4aa4c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(196,154,60,.3);
+  }
+
+  .btn-primary:disabled {
+    background: var(--mid);
+    color: var(--cream);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--mid);
+    color: var(--mid);
+  }
+
+  .btn-secondary:hover {
+    background: var(--mid);
+    color: var(--cream);
+  }
+
+  .login-link {
+    text-align: center;
+    margin-top: 2rem;
+    font-family: var(--sans);
+    font-size: .85rem;
+    color: var(--mid);
+  }
+
+  .login-link a {
+    color: var(--mahogany);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .login-link a:hover {
+    color: var(--gold);
+  }
+
+  /* Alerts */
+  .alert {
+    padding: 1rem 1.5rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    border: 1px solid;
+  }
+
+  .alert-success {
+    background: rgba(40,167,69,.1);
+    border-color: rgba(40,167,69,.3);
+    color: #155724;
+  }
+
+  .alert-warning {
+    background: rgba(255,193,7,.1);
+    border-color: rgba(255,193,7,.3);
+    color: #856404;
+  }
+
+  .alert-error {
+    background: rgba(220,53,69,.1);
+    border-color: rgba(220,53,69,.3);
+    color: #721c24;
+  }
+
+  .alert-info {
+    background: rgba(23,162,184,.1);
+    border-color: rgba(23,162,184,.3);
+    color: #0c5460;
+  }
+
+  /* Success Section */
+  .success-section {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .success-icon {
+    width: 80px; height: 80px;
+    background: rgba(40,167,69,.1);
+    border: 2px solid rgba(40,167,69,.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1.5rem;
+    color: #155724;
+  }
+
+  .success-title {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--espresso);
+    margin-bottom: 1rem;
+  }
+
+  .success-message {
+    font-family: var(--sans);
+    font-size: 1rem;
+    color: var(--mid);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+  }
+
+  /* Loading */
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--light-rule);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Password Strength */
+  .password-strength {
+    margin-top: .5rem;
+    display: flex;
+    gap: .25rem;
+  }
+
+  .strength-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--light-rule);
+    border-radius: 2px;
+    transition: var(--transition);
+  }
+
+  .strength-bar.active {
+    background: var(--gold);
+  }
+
+  .strength-bar.weak {
+    background: #dc3545;
+  }
+
+  .strength-bar.medium {
+    background: #ffc107;
+  }
+
+  .strength-bar.strong {
+    background: #28a745;
+  }
+
+  .strength-text {
+    font-family: var(--sans);
+    font-size: .7rem;
+    margin-top: .25rem;
+    color: var(--mid);
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .confirm-container {
+      padding: 1rem;
+    }
+
+    .confirm-card {
+      max-width: none;
+    }
+
+    .confirm-body {
+      padding: 1.5rem;
+    }
+
+    .header-content {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="confirm-header">
+    <div class="header-content">
+      <a href="instituto_cafe_angola.html" class="logo">
+        <div class="logo-emblem">☕</div>
+        <div class="logo-text">
+          <span class="abbr">INCA</span>
+          <span class="full">Instituto Nacional do Café de Angola</span>
+        </div>
+      </a>
+      <a href="login.html" class="back-link">← Voltar ao Login</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="confirm-container">
+    <div class="confirm-card">
+      <div class="confirm-header-card">
+        <div class="confirm-icon">🔑</div>
+        <h1 class="confirm-title">Confirmar Reset</h1>
+        <p class="confirm-subtitle">Defina o seu novo PIN de acesso</p>
+      </div>
+
+      <div class="confirm-body">
+        <div id="alertContainer"></div>
+
+        <!-- Verification Section -->
+        <div id="verificationSection">
+          <div class="form-group">
+            <label class="form-label" for="nbi">Número de Identidade (NBI)</label>
+            <input type="text" class="form-control" id="nbi" required 
+                   placeholder="Ex: DEMO-006-UIG-2026" autocomplete="username">
+            <div class="form-hint">Introduza o seu NBI</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="token">Token de Reset</label>
+            <input type="text" class="form-control" id="token" required 
+                   placeholder="Cole o token recebido por email">
+            <div class="form-hint">Token de 32 caracteres recebido no seu email</div>
+          </div>
+
+          <button type="button" class="btn btn-primary" id="verifyBtn" onclick="verifyToken()">
+            <span id="verifyBtnText">Verificar Token</span>
+            <span id="verifyBtnLoading" class="loading" style="display: none;"></span>
+          </button>
+        </div>
+
+        <!-- Reset Form Section -->
+        <div id="resetFormSection" style="display: none;">
+          <div class="token-display" id="tokenDisplay"></div>
+
+          <form id="resetConfirmForm">
+            <div class="form-group">
+              <label class="form-label" for="novoPin">Novo PIN</label>
+              <input type="password" class="form-control" id="novoPin" required 
+                     placeholder="Mínimo 6 dígitos" autocomplete="new-password">
+              <div class="password-strength" id="passwordStrength">
+                <div class="strength-bar"></div>
+                <div class="strength-bar"></div>
+                <div class="strength-bar"></div>
+                <div class="strength-bar"></div>
+              </div>
+              <div class="strength-text" id="strengthText"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="confirmarPin">Confirmar Novo PIN</label>
+              <input type="password" class="form-control" id="confirmarPin" required 
+                     placeholder="Repita o novo PIN" autocomplete="new-password">
+              <div class="form-hint" id="matchHint"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="resetBtn">
+              <span id="resetBtnText">Redefinir PIN</span>
+              <span id="resetBtnLoading" class="loading" style="display: none;"></span>
+            </button>
+          </form>
+
+          <div class="login-link">
+            <a href="login.html">Voltar ao Login</a>
+          </div>
+        </div>
+
+        <!-- Success Section -->
+        <div id="successSection" class="success-section">
+          <div class="success-icon">✅</div>
+          <h2 class="success-title">PIN Redefinido!</h2>
+          <p class="success-message">
+            O seu PIN foi actualizado com sucesso.<br>
+            Agora pode fazer login com o novo PIN.
+          </p>
+
+          <button class="btn btn-primary" onclick="window.location.href='login.html'">
+            Fazer Login Agora
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ── GLOBAL STATE ──
+    let isLoading = false;
+    let verifiedToken = null;
+    let verifiedNBI = null;
+
+    // ── INIT ──
+    document.addEventListener('DOMContentLoaded', () => {
+      setupEventListeners();
+      loadURLParams();
+    });
+
+    // ── LOAD URL PARAMETERS ──
+    function loadURLParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      const nbi = urlParams.get('nbi');
+
+      if (token && nbi) {
+        document.getElementById('token').value = token;
+        document.getElementById('nbi').value = nbi;
+        
+        // Auto-verify after a short delay
+        setTimeout(() => {
+          verifyToken();
+        }, 500);
+      }
+    }
+
+    // ── EVENT LISTENERS ──
+    function setupEventListeners() {
+      document.getElementById('resetConfirmForm').addEventListener('submit', handleResetConfirm);
+      
+      // Auto-format NBI input
+      document.getElementById('nbi').addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase().replace(/\s/g, '');
+      });
+
+      // Password strength checker
+      document.getElementById('novoPin').addEventListener('input', checkPasswordStrength);
+      
+      // Password match checker
+      document.getElementById('confirmarPin').addEventListener('input', checkPasswordMatch);
+    }
+
+    // ── TOKEN VERIFICATION ──
+    async function verifyToken() {
+      if (isLoading) return;
+      
+      const nbi = document.getElementById('nbi').value.trim();
+      const token = document.getElementById('token').value.trim();
+
+      if (!nbi || !token) {
+        showAlert('Por favor, preencha todos os campos.', 'warning');
+        return;
+      }
+
+      setLoading(true, 'verify');
+      clearAlerts();
+
+      try {
+        const response = await fetch(`/api/reset-verificar?token=${encodeURIComponent(token)}&nbi=${encodeURIComponent(nbi)}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Token inválido');
+        }
+
+        if (data.success) {
+          verifiedToken = token;
+          verifiedNBI = nbi;
+          showResetForm();
+        } else {
+          showAlert(data.error || 'Token inválido', 'error');
+        }
+      } catch (error) {
+        console.error('Token verification error:', error);
+        showAlert(error.message || 'Erro ao verificar token. Tente novamente.', 'error');
+      } finally {
+        setLoading(false, 'verify');
+      }
+    }
+
+    // ── RESET CONFIRM HANDLER ──
+    async function handleResetConfirm(e) {
+      e.preventDefault();
+      
+      if (isLoading) return;
+      
+      const novoPin = document.getElementById('novoPin').value;
+      const confirmarPin = document.getElementById('confirmarPin').value;
+
+      if (!novoPin || !confirmarPin) {
+        showAlert('Por favor, preencha todos os campos.', 'warning');
+        return;
+      }
+
+      if (novoPin.length < 6) {
+        showAlert('O PIN deve ter pelo menos 6 caracteres.', 'warning');
+        return;
+      }
+
+      if (novoPin !== confirmarPin) {
+        showAlert('Os PINs não coincidem.', 'warning');
+        return;
+      }
+
+      setLoading(true, 'reset');
+      clearAlerts();
+
+      try {
+        const response = await fetch('/api/reset-confirmar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            token: verifiedToken, 
+            nbi: verifiedNBI, 
+            novoPin: novoPin 
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao redefinir PIN');
+        }
+
+        if (data.success) {
+          showSuccess();
+        } else {
+          showAlert(data.error || 'Erro ao redefinir PIN', 'error');
+        }
+      } catch (error) {
+        console.error('Reset confirm error:', error);
+        showAlert(error.message || 'Erro de conexão. Tente novamente.', 'error');
+      } finally {
+        setLoading(false, 'reset');
+      }
+    }
+
+    // ── UI STATE MANAGEMENT ──
+    function showResetForm() {
+      const verificationSection = document.getElementById('verificationSection');
+      const resetFormSection = document.getElementById('resetFormSection');
+      const tokenDisplay = document.getElementById('tokenDisplay');
+
+      verificationSection.style.display = 'none';
+      resetFormSection.style.display = 'block';
+      tokenDisplay.textContent = `Token: ${verifiedToken}`;
+
+      // Focus on new PIN field
+      document.getElementById('novoPin').focus();
+    }
+
+    function showSuccess() {
+      const resetFormSection = document.getElementById('resetFormSection');
+      const successSection = document.getElementById('successSection');
+
+      resetFormSection.style.display = 'none';
+      successSection.style.display = 'block';
+    }
+
+    // ── PASSWORD VALIDATION ──
+    function checkPasswordStrength() {
+      const password = document.getElementById('novoPin').value;
+      const strengthBars = document.querySelectorAll('.strength-bar');
+      const strengthText = document.getElementById('strengthText');
+
+      // Reset bars
+      strengthBars.forEach(bar => {
+        bar.className = 'strength-bar';
+      });
+
+      if (password.length === 0) {
+        strengthText.textContent = '';
+        return;
+      }
+
+      let strength = 0;
+      
+      // Length check
+      if (password.length >= 6) strength++;
+      if (password.length >= 8) strength++;
+      
+      // Complexity checks
+      if (/\d/.test(password)) strength++; // Has numbers
+      if (/[A-Z]/.test(password)) strength++; // Has uppercase
+      if (/[a-z]/.test(password)) strength++; // Has lowercase
+      if (/[^A-Za-z0-9]/.test(password)) strength++; // Has special chars
+
+      // Update visual feedback
+      const strengthLevel = Math.min(strength, 4);
+      const strengthClasses = ['weak', 'medium', 'strong', 'strong'];
+      
+      for (let i = 0; i < strengthLevel; i++) {
+        strengthBars[i].classList.add('active');
+        if (strengthClasses[strengthLevel - 1]) {
+          strengthBars[i].classList.add(strengthClasses[strengthLevel - 1]);
+        }
+      }
+
+      const strengthTexts = ['', 'Fraca', 'Média', 'Forte', 'Muito Forte'];
+      strengthText.textContent = strengthTexts[strengthLevel] || '';
+    }
+
+    function checkPasswordMatch() {
+      const novoPin = document.getElementById('novoPin').value;
+      const confirmarPin = document.getElementById('confirmarPin').value;
+      const matchHint = document.getElementById('matchHint');
+
+      if (confirmarPin.length === 0) {
+        matchHint.textContent = '';
+        return;
+      }
+
+      if (novoPin === confirmarPin) {
+        matchHint.textContent = '✅ PINs coincidem';
+        matchHint.style.color = 'var(--moss)';
+      } else {
+        matchHint.textContent = '❌ PINs não coincidem';
+        matchHint.style.color = '#dc3545';
+      }
+    }
+
+    // ── UI HELPERS ──
+    function setLoading(loading, button) {
+      isLoading = loading;
+      const btn = document.getElementById(button + 'Btn');
+      const btnText = document.getElementById(button + 'BtnText');
+      const btnLoading = document.getElementById(button + 'BtnLoading');
+
+      if (loading) {
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline-block';
+      } else {
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoading.style.display = 'none';
+      }
+    }
+
+    function showAlert(message, type = 'info') {
+      clearAlerts();
+      
+      const alertContainer = document.getElementById('alertContainer');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+      
+      alertContainer.appendChild(alert);
+
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        if (alert.parentNode) {
+          alert.remove();
+        }
+      }, 5000);
+    }
+
+    function clearAlerts() {
+      const alertContainer = document.getElementById('alertContainer');
+      alertContainer.innerHTML = '';
+    }
+
+    // ── KEYBOARD SHORTCUTS ──
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+Enter to submit current form
+      if (e.ctrlKey && e.key === 'Enter') {
+        if (document.getElementById('verificationSection').style.display !== 'none') {
+          verifyToken();
+        } else {
+          document.getElementById('resetConfirmForm').dispatchEvent(new Event('submit'));
+        }
+      }
+      
+      // Escape to go back
+      if (e.key === 'Escape') {
+        window.location.href = 'login.html';
+      }
+    });
+
+    // ── AUTO-FOCUS ──
+    window.addEventListener('load', () => {
+      if (!document.getElementById('token').value) {
+        document.getElementById('nbi').focus();
+      } else {
+        document.getElementById('token').focus();
+      }
+    });
+  </script>
+</body>
+</html>

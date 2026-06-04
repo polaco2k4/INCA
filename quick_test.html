@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Test</title>
+</head>
+<body>
+    <h1>Quick Test</h1>
+    <button onclick="quickTest()">Test Now</button>
+    <div id="out"></div>
+
+    <script>
+        function quickTest() {
+            fetch('/api/reset-solicitar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({nbi:'DEMO-006-UIG-2026',email:'test@test.com'})
+            })
+            .then(r => r.text())
+            .then(t => document.getElementById('out').innerHTML = '<pre>'+t+'</pre>')
+            .catch(e => document.getElementById('out').innerHTML = 'ERROR: '+e.message);
+        }
+    </script>
+</body>
+</html>

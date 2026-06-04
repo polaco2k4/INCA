@@ -1,0 +1,3078 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCA — Instituto Nacional do Café de Angola</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --espresso:   #1A0A00;
+    --roast:      #3B1A08;
+    --mahogany:   #6B3520;
+    --gold:       #C49A3C;
+    --cream:      #F5EFE0;
+    --parchment:  #EDE4CC;
+    --ivory:      #FAF7F0;
+    --moss:       #2C4A2E;
+    --sage:       #5A7A5C;
+    --slate:      #3D3D3D;
+    --mid:        #7A7A72;
+    --light-rule: rgba(100,70,40,.12);
+    --serif: 'Playfair Display', Georgia, serif;
+    --body:  'Libre Baskerville', Georgia, serif;
+    --sans:  'Source Sans 3', sans-serif;
+    --transition: .35s cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    background: var(--ivory);
+    color: var(--espresso);
+    font-family: var(--body);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--cream); }
+  ::-webkit-scrollbar-thumb { background: var(--mahogany); border-radius: 3px; }
+
+  /* ── HEADER / NAV ── */
+  #nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 4vw;
+    height: 72px;
+    background: rgba(26,10,0,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(196,154,60,.25);
+    transition: var(--transition);
+  }
+  #nav.scrolled {
+    height: 60px;
+    background: rgba(26,10,0,.97);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 14px; text-decoration: none;
+  }
+  .nav-logo-emblem {
+    width: 42px; height: 42px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .nav-logo-text { line-height: 1.2; }
+  .nav-logo-text .abbr {
+    display: block;
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: .08em;
+  }
+  .nav-logo-text .full {
+    display: block;
+    font-family: var(--sans);
+    font-size: .65rem;
+    color: rgba(245,239,224,.6);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .nav-links {
+    display: flex; align-items: center; gap: 2rem;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--sans);
+    font-size: .82rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(245,239,224,.8);
+    text-decoration: none;
+    padding: 4px 0;
+    position: relative;
+    transition: color var(--transition);
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute; bottom: -2px; left: 0; right: 0;
+    height: 1px;
+    background: var(--gold);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--transition);
+  }
+  .nav-links a:hover { color: var(--gold); }
+  .nav-links a:hover::after { transform: scaleX(1); }
+
+  .lang-toggle {
+    display: flex; gap: 0;
+    border: 1px solid rgba(196,154,60,.4);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-left: 1.5rem;
+  }
+  .lang-toggle button {
+    background: none; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: .72rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: rgba(245,239,224,.6);
+    padding: 5px 10px;
+    transition: var(--transition);
+  }
+  .lang-toggle button.active {
+    background: var(--gold);
+    color: var(--espresso);
+  }
+  .lang-toggle button:hover:not(.active) { color: var(--gold); }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: grid; place-items: center;
+    position: relative; overflow: hidden;
+    background: var(--espresso);
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 70% 50%, rgba(59,26,8,.6) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 80% at 20% 80%, rgba(44,74,46,.3) 0%, transparent 50%),
+      linear-gradient(160deg, #1A0A00 0%, #2C1505 50%, #1A0A00 100%);
+  }
+  .hero-grain {
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+    background-size: 200px;
+    opacity: .5;
+    pointer-events: none;
+  }
+  /* decorative circles */
+  .hero-deco {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(196,154,60,.12);
+    pointer-events: none;
+  }
+  .hero-deco:nth-child(1) { width: 600px; height: 600px; top: -100px; right: -100px; }
+  .hero-deco:nth-child(2) { width: 900px; height: 900px; top: -250px; right: -250px; border-color: rgba(196,154,60,.06); }
+  .hero-deco:nth-child(3) { width: 300px; height: 300px; bottom: 5%; left: 5%; border-color: rgba(196,154,60,.08); }
+
+  .hero-content {
+    position: relative; z-index: 2;
+    text-align: center;
+    padding: 0 1.5rem;
+    max-width: 900px;
+    animation: fadeUp .9s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .hero-eyebrow {
+    font-family: var(--sans);
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    animation: fadeUp .9s .1s ease both;
+  }
+  .hero-title {
+    font-family: var(--serif);
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.08;
+    margin-bottom: 1rem;
+    animation: fadeUp .9s .2s ease both;
+  }
+  .hero-title em {
+    color: var(--gold);
+    font-style: normal;
+    display: block;
+  }
+  .hero-sub {
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: rgba(245,239,224,.65);
+    max-width: 580px; margin: 0 auto 2.5rem;
+    animation: fadeUp .9s .3s ease both;
+  }
+  .hero-ctas {
+    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    animation: fadeUp .9s .4s ease both;
+  }
+  .btn-primary {
+    display: inline-block;
+    padding: .85rem 2rem;
+    background: var(--gold);
+    color: var(--espresso);
+    font-family: var(--sans); font-size: .82rem; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
+    text-decoration: none; border: none; cursor: pointer;
+    border-radius: 2px;
+    transition: var(--transition);
+  }
+  .btn-primary:hover { background: #d4aa4c; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(196,154,60,.3); }
+  .btn-outline {
+    display: inline-block;
+    padding: .85rem 2rem;
+    border: 1px solid rgba(245,239,224,.35);
+    color: var(--cream);
+    font-family: var(--sans); font-size: .82rem; font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase;
+    text-decoration: none; cursor: pointer; background: none;
+    border-radius: 2px;
+    transition: var(--transition);
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+  .hero-stats {
+    position: absolute; bottom: 3rem; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 4rem;
+    z-index: 2;
+    animation: fadeUp .9s .55s ease both;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat-num {
+    font-family: var(--serif);
+    font-size: 2rem; font-weight: 700;
+    color: var(--gold); display: block; line-height: 1;
+  }
+  .hero-stat-lbl {
+    font-family: var(--sans); font-size: .7rem; font-weight: 600;
+    letter-spacing: .15em; text-transform: uppercase;
+    color: rgba(245,239,224,.5); margin-top: .3rem;
+  }
+  .hero-scroll {
+    position: absolute; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+    z-index: 2; text-align: center;
+    animation: bounce 2s 1.5s ease infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%       { transform: translateX(-50%) translateY(8px); }
+  }
+  .hero-scroll span {
+    display: block; width: 1px; height: 40px;
+    background: linear-gradient(to bottom, rgba(196,154,60,.7), transparent);
+    margin: 0 auto;
+  }
+
+  /* ── SECTIONS SHARED ── */
+  section { padding: 6rem 4vw; }
+  .section-label {
+    font-family: var(--sans); font-size: .7rem; font-weight: 700;
+    letter-spacing: .3em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: .75rem;
+  }
+  .section-title {
+    font-family: var(--serif); font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 700; color: var(--espresso); line-height: 1.2;
+    margin-bottom: 1.25rem;
+  }
+  .section-title.light { color: var(--cream); }
+  .section-lead {
+    font-family: var(--sans); font-size: 1.05rem; font-weight: 300;
+    color: var(--mid); max-width: 600px; line-height: 1.8;
+  }
+  .section-lead.light { color: rgba(245,239,224,.65); }
+  .rule {
+    width: 48px; height: 2px;
+    background: var(--gold);
+    margin: 1.25rem 0;
+  }
+
+  /* ── ABOUT ── */
+  #about { background: var(--ivory); }
+  .about-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 5rem; align-items: center; max-width: 1200px; margin: 0 auto;
+  }
+  .about-visual {
+    position: relative;
+  }
+  .about-img-frame {
+    aspect-ratio: 4/5;
+    background: linear-gradient(135deg, var(--roast) 0%, var(--mahogany) 60%, var(--moss) 100%);
+    border-radius: 2px;
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .about-img-inner {
+    font-size: 8rem; opacity: .35;
+    filter: sepia(1) brightness(.6);
+  }
+  .about-img-frame::after {
+    content: 'ANGOLA\A1975';
+    white-space: pre;
+    position: absolute; bottom: 2rem; right: 2rem;
+    font-family: var(--serif); font-size: .9rem;
+    color: rgba(245,239,224,.4);
+    text-align: right; line-height: 1.3;
+  }
+  .about-accent {
+    position: absolute; top: -1.5rem; left: -1.5rem;
+    width: 100px; height: 100px;
+    border: 2px solid var(--gold);
+    border-radius: 2px; z-index: -1;
+  }
+  .about-badge {
+    position: absolute; bottom: -1.5rem; right: -1.5rem;
+    background: var(--gold); color: var(--espresso);
+    padding: 1.25rem; text-align: center;
+    font-family: var(--serif); border-radius: 2px;
+  }
+  .about-badge-num { font-size: 2rem; font-weight: 700; display: block; line-height: 1; }
+  .about-badge-text { font-size: .7rem; font-weight: 400; opacity: .75; }
+  .about-pillars {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1rem; margin-top: 2rem;
+  }
+  .about-pillar {
+    padding: 1rem;
+    border: 1px solid var(--light-rule);
+    border-radius: 2px;
+    border-left: 3px solid var(--gold);
+    background: var(--cream);
+  }
+  .about-pillar-title {
+    font-family: var(--sans); font-size: .78rem; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--roast); margin-bottom: .35rem;
+  }
+  .about-pillar p { font-size: .82rem; color: var(--mid); line-height: 1.6; }
+
+  /* ── FILEIRAS ── */
+  #fileiras { background: var(--roast); }
+  .fileiras-header { max-width: 1200px; margin: 0 auto 3.5rem; }
+  .fileiras-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1.5px; max-width: 1200px; margin: 0 auto;
+    border: 1.5px solid rgba(196,154,60,.15);
+  }
+  .fileira-card {
+    background: rgba(0,0,0,.25);
+    padding: 2.5rem 1.75rem;
+    position: relative; overflow: hidden;
+    cursor: pointer;
+    transition: var(--transition);
+    border-right: 1.5px solid rgba(196,154,60,.1);
+  }
+  .fileira-card:last-child { border-right: none; }
+  .fileira-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(160deg, rgba(196,154,60,.08) 0%, transparent 60%);
+    opacity: 0; transition: var(--transition);
+  }
+  .fileira-card:hover { background: rgba(0,0,0,.4); }
+  .fileira-card:hover::before { opacity: 1; }
+  .fileira-icon {
+    font-size: 2.8rem; margin-bottom: 1.25rem;
+    display: block; line-height: 1;
+  }
+  .fileira-name {
+    font-family: var(--serif); font-size: 1.45rem; font-weight: 700;
+    color: var(--cream); margin-bottom: .5rem;
+  }
+  .fileira-latin {
+    font-family: var(--body); font-style: italic;
+    font-size: .78rem; color: var(--gold); margin-bottom: 1rem; display: block;
+  }
+  .fileira-desc {
+    font-family: var(--sans); font-size: .85rem; font-weight: 300;
+    color: rgba(245,239,224,.6); line-height: 1.7; margin-bottom: 1.5rem;
+  }
+  .fileira-stat-row { display: flex; gap: 1.5rem; }
+  .fileira-stat { text-align: left; }
+  .fileira-stat-val {
+    font-family: var(--serif); font-size: 1.25rem; font-weight: 700;
+    color: var(--gold); display: block; line-height: 1;
+  }
+  .fileira-stat-key {
+    font-family: var(--sans); font-size: .65rem; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: rgba(245,239,224,.4); margin-top: .2rem;
+  }
+  .fileira-more {
+    display: inline-flex; align-items: center; gap: .5rem;
+    margin-top: 1.5rem;
+    font-family: var(--sans); font-size: .72rem; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: var(--gold); text-decoration: none;
+    opacity: 0; transform: translateY(8px);
+    transition: var(--transition);
+  }
+  .fileira-card:hover .fileira-more { opacity: 1; transform: translateY(0); }
+
+  /* ── PROJECTOS ── */
+  #projectos { 
+    background: linear-gradient(135deg, #2C1505 0%, #1A0A00 50%, #2C1505 100%);
+    position: relative;
+  }
+  #projectos::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 70% 50%, rgba(196,154,60,.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  #projectos .fileiras-header { position: relative; z-index: 2; }
+  #projectos .fileiras-grid { 
+    position: relative; z-index: 2;
+    background: rgba(0,0,0,.3);
+    border: 2px solid rgba(196,154,60,.25);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  }
+  #projectos .fileira-card {
+    background: linear-gradient(145deg, rgba(26,10,0,.8) 0%, rgba(59,26,8,.9) 100%);
+    border-right: 2px solid rgba(196,154,60,.2);
+    backdrop-filter: blur(8px);
+    transition: all var(--transition);
+  }
+  #projectos .fileira-card:last-child { border-right: none; }
+  #projectos .fileira-card::before {
+    background: linear-gradient(160deg, rgba(196,154,60,.12) 0%, rgba(196,154,60,.05) 60%);
+  }
+  #projectos .fileira-card:hover { 
+    background: linear-gradient(145deg, rgba(26,10,0,.95) 0%, rgba(59,26,8,1) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(196,154,60,.2);
+  }
+  #projectos .fileira-card:hover::before { opacity: 1; }
+  #projectos .fileira-icon {
+    font-size: 3.2rem; margin-bottom: 1.5rem;
+    filter: drop-shadow(0 2px 8px rgba(196,154,60,.3));
+  }
+  #projectos .fileira-name {
+    font-size: 1.6rem; font-weight: 800;
+    color: #FFFFFF; text-shadow: 0 1px 3px rgba(0,0,0,.5);
+    margin-bottom: .75rem;
+  }
+  #projectos .fileira-latin {
+    font-size: .85rem; color: var(--gold);
+    margin-bottom: 1.25rem; 
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  #projectos .fileira-desc {
+    font-size: .9rem; font-weight: 400;
+    color: rgba(245,239,224,.85); line-height: 1.8;
+    margin-bottom: 2rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  #projectos .fileira-stat-row { gap: 2rem; margin-bottom: 1.5rem; }
+  #projectos .fileira-stat-val {
+    font-size: 1.4rem; font-weight: 800;
+    color: var(--gold); text-shadow: 0 1px 3px rgba(0,0,0,.5);
+  }
+  #projectos .fileira-stat-key {
+    font-size: .7rem; font-weight: 700;
+    color: rgba(245,239,224,.7); text-shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  #projectos .fileira-more {
+    opacity: 1; transform: translateY(0);
+    color: #FFFFFF; background: rgba(196,154,60,.2);
+    padding: .5rem 1rem; border-radius: 2px;
+    border: 1px solid rgba(196,154,60,.3);
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  #projectos .fileira-more:hover { 
+    background: rgba(196,154,60,.3);
+    border-color: var(--gold);
+    transform: translateY(-1px);
+  }
+
+  /* ── NOTÍCIAS ── */
+  #noticias { background: var(--cream); }
+  .noticias-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    max-width: 1200px; margin: 0 auto 3rem;
+  }
+  .news-grid {
+    display: grid; grid-template-columns: 2fr 1fr 1fr;
+    gap: 1.5px; max-width: 1200px; margin: 0 auto;
+  }
+  .news-card {
+    background: var(--ivory);
+    padding: 2rem; position: relative; overflow: hidden;
+    transition: var(--transition); cursor: pointer;
+    border: 1px solid var(--light-rule);
+  }
+  .news-card.featured { grid-row: span 2; padding: 2.5rem; }
+  .news-card:hover { box-shadow: 0 12px 40px rgba(26,10,0,.08); transform: translateY(-3px); }
+  .news-tag {
+    display: inline-block;
+    font-family: var(--sans); font-size: .64rem; font-weight: 700;
+    letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ivory); background: var(--mahogany);
+    padding: 3px 8px; border-radius: 1px; margin-bottom: 1rem;
+  }
+  .news-tag.green { background: var(--moss); }
+  .news-tag.gold { background: var(--gold); color: var(--espresso); }
+  .news-title {
+    font-family: var(--serif); color: var(--espresso); line-height: 1.3;
+    margin-bottom: .75rem;
+  }
+  .news-card.featured .news-title { font-size: 1.45rem; font-weight: 700; }
+  .news-card:not(.featured) .news-title { font-size: 1rem; font-weight: 600; }
+  .news-excerpt {
+    font-family: var(--sans); font-size: .88rem; font-weight: 300;
+    color: var(--mid); line-height: 1.7;
+  }
+  .news-meta {
+    display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem;
+    font-family: var(--sans); font-size: .72rem; font-weight: 400;
+    color: rgba(122,122,114,.7);
+    padding-top: 1rem; border-top: 1px solid var(--light-rule);
+  }
+  .news-meta-dot { width: 3px; height: 3px; background: var(--gold); border-radius: 50%; }
+
+  /* ── SERVIÇOS / PORTAL ── */
+  #servicos { background: var(--espresso); }
+  .servicos-inner { max-width: 1200px; margin: 0 auto; }
+  .servicos-header { margin-bottom: 3.5rem; }
+  .servicos-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px; background: rgba(196,154,60,.1);
+  }
+  .servico-card {
+    background: rgba(255,255,255,.03);
+    padding: 2.5rem 2rem;
+    transition: var(--transition);
+    cursor: pointer; position: relative;
+  }
+  .servico-card:hover { background: rgba(255,255,255,.07); }
+  .servico-num {
+    font-family: var(--serif); font-size: 2.5rem; font-weight: 700;
+    color: rgba(196,154,60,.2); line-height: 1;
+    margin-bottom: 1.25rem; display: block;
+  }
+  .servico-icon {
+    width: 44px; height: 44px;
+    background: rgba(196,154,60,.12);
+    border: 1px solid rgba(196,154,60,.25);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; margin-bottom: 1.25rem;
+  }
+  .servico-title {
+    font-family: var(--serif); font-size: 1.1rem; font-weight: 600;
+    color: var(--cream); margin-bottom: .65rem;
+  }
+  .servico-desc {
+    font-family: var(--sans); font-size: .84rem; font-weight: 300;
+    color: rgba(245,239,224,.5); line-height: 1.7;
+  }
+  .servico-link {
+    display: inline-flex; align-items: center; gap: .4rem;
+    margin-top: 1.5rem;
+    font-family: var(--sans); font-size: .72rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--gold); text-decoration: none;
+    border-bottom: 1px solid rgba(196,154,60,.3);
+    padding-bottom: 2px; transition: var(--transition);
+  }
+  .servico-link:hover { border-color: var(--gold); }
+
+  /* ── NUMBERS BAND ── */
+  #numbers {
+    background: var(--parchment);
+    padding: 4rem 4vw;
+    border-top: 1px solid var(--light-rule);
+    border-bottom: 1px solid var(--light-rule);
+  }
+  .numbers-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 0; max-width: 1200px; margin: 0 auto;
+    divide-x: 1px solid var(--light-rule);
+  }
+  .number-item {
+    text-align: center; padding: 1.5rem;
+    border-right: 1px solid var(--light-rule);
+  }
+  .number-item:last-child { border-right: none; }
+  .number-val {
+    font-family: var(--serif); font-size: 2.6rem; font-weight: 700;
+    color: var(--roast); line-height: 1; display: block;
+  }
+  .number-unit { color: var(--gold); }
+  .number-label {
+    font-family: var(--sans); font-size: .7rem; font-weight: 600;
+    letter-spacing: .15em; text-transform: uppercase;
+    color: var(--mid); margin-top: .5rem;
+  }
+
+  /* ── FAQ ── */
+  .faq-item {
+    background: white;
+    border: 1px solid var(--light-rule);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: var(--transition);
+  }
+  .faq-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,.06);
+  }
+  .faq-question {
+    padding: 1.25rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    user-select: none;
+  }
+  .faq-question h3 {
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--espresso);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .faq-icon {
+    font-size: 1.25rem;
+    color: var(--gold);
+    transition: transform var(--transition);
+    flex-shrink: 0;
+  }
+  .faq-item.active .faq-icon {
+    transform: rotate(180deg);
+  }
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .faq-item.active .faq-answer {
+    max-height: 500px;
+  }
+  .faq-answer-content {
+    padding: 0 1.5rem 1.5rem;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--mid);
+    line-height: 1.8;
+  }
+  .faq-category {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: var(--cream);
+    padding: 0.25rem 0.75rem;
+    border-radius: 2px;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ── CONTACTO ── */
+  #contacto { background: var(--ivory); }
+  .contacto-grid {
+    display: grid; grid-template-columns: 1fr 1.3fr;
+    gap: 5rem; max-width: 1200px; margin: 0 auto; align-items: start;
+  }
+  .contacto-info-item {
+    display: flex; gap: 1rem; align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--light-rule);
+  }
+  .contacto-info-item:last-child { border-bottom: none; }
+  .contacto-info-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    background: var(--cream); border: 1px solid var(--light-rule);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 2px; font-size: 1rem;
+  }
+  .contacto-info-label {
+    font-family: var(--sans); font-size: .68rem; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: .25rem;
+  }
+  .contacto-info-val {
+    font-family: var(--body); font-size: .92rem; color: var(--slate);
+  }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-label {
+    display: block;
+    font-family: var(--sans); font-size: .7rem; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: var(--mahogany); margin-bottom: .5rem;
+  }
+  .form-control {
+    width: 100%; padding: .85rem 1rem;
+    background: var(--cream); border: 1px solid rgba(100,70,40,.15);
+    border-radius: 2px; font-family: var(--body); font-size: .9rem;
+    color: var(--espresso); outline: none;
+    transition: border-color var(--transition);
+  }
+  .form-control:focus { border-color: var(--gold); }
+  textarea.form-control { resize: vertical; min-height: 130px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--espresso);
+    border-top: 1px solid rgba(196,154,60,.15);
+    padding: 3.5rem 4vw 2rem;
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem; max-width: 1200px; margin: 0 auto 3rem;
+  }
+  .footer-brand .abbr {
+    font-family: var(--serif); font-size: 1.35rem; font-weight: 700;
+    color: var(--gold); letter-spacing: .06em;
+  }
+  .footer-brand p {
+    font-family: var(--sans); font-size: .82rem; font-weight: 300;
+    color: rgba(245,239,224,.45); line-height: 1.8; margin-top: .75rem;
+  }
+  .footer-col-title {
+    font-family: var(--sans); font-size: .68rem; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 1rem;
+  }
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: .5rem; }
+  .footer-links a {
+    font-family: var(--sans); font-size: .82rem; font-weight: 300;
+    color: rgba(245,239,224,.5); text-decoration: none;
+    transition: color var(--transition);
+  }
+  .footer-links a:hover { color: var(--gold); }
+  .footer-bottom {
+    max-width: 1200px; margin: 0 auto;
+    padding-top: 1.5rem; border-top: 1px solid rgba(196,154,60,.1);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: .75rem;
+  }
+  .footer-bottom p {
+    font-family: var(--sans); font-size: .72rem;
+    color: rgba(245,239,224,.3);
+  }
+  .footer-social { display: flex; gap: .75rem; }
+  .social-btn {
+    width: 32px; height: 32px;
+    border: 1px solid rgba(196,154,60,.25);
+    border-radius: 2px; display: flex; align-items: center; justify-content: center;
+    font-size: .85rem; text-decoration: none;
+    color: rgba(245,239,224,.4); transition: var(--transition);
+  }
+  .social-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── MOBILE MENU ── */
+  .menu-toggle {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    flex-direction: column; gap: 5px; padding: 4px;
+  }
+  .menu-toggle span {
+    display: block; width: 22px; height: 1.5px;
+    background: var(--cream); transition: var(--transition);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .nav-links { display: none; }
+    .menu-toggle { display: flex; }
+    .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .fileiras-grid { grid-template-columns: 1fr 1fr; }
+    .news-grid { grid-template-columns: 1fr; }
+    .news-card.featured { grid-row: auto; }
+    .servicos-grid { grid-template-columns: 1fr; }
+    .numbers-grid { grid-template-columns: repeat(3, 1fr); flex-wrap: wrap; }
+    .contacto-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .hero-stats { gap: 2rem; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .fileiras-grid { grid-template-columns: 1fr; }
+    .about-pillars { grid-template-columns: 1fr; }
+    .numbers-grid { grid-template-columns: 1fr 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .hero-stats { flex-wrap: wrap; }
+  }
+
+  /* ── LANG SWITCH ── */
+  [data-lang="en"] { display: none; }
+  body:not(.lang-en) [data-lang="pt"] { display: unset; }
+  body:not(.lang-en) [data-lang="en"] { display: none; }
+  body.lang-en [data-lang="pt"] { display: none; }
+  body.lang-en [data-lang="en"] { display: unset; }
+  /* For inline elements (like span) - high specificity */
+  .nav-logo-text .full.lang-en { display: none; }
+  body.lang-en .nav-logo-text .full.lang-en { display: block; }
+  /* For block elements */
+  .lang-en-block { display: none; }
+  body.lang-en .lang-en-block { display: block; }
+  body.lang-en .lang-pt-block { display: none; }
+
+  /* ── REVEAL ANIMATIONS ── */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity .7s ease, transform .7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── PORTAL MODALS ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(26,10,0,.82); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s ease;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: var(--ivory); border-radius: 2px;
+    width: 100%; max-width: 520px; max-height: 92vh;
+    overflow-y: auto; position: relative;
+    box-shadow: 0 24px 80px rgba(26,10,0,.4);
+    transform: translateY(18px); transition: transform .3s ease;
+  }
+  .modal-overlay.active .modal-box { transform: translateY(0); }
+  .modal-box.modal-wide { max-width: 820px; }
+  .modal-header {
+    background: var(--espresso); padding: 1.4rem 1.75rem;
+    border-bottom: 1px solid rgba(196,154,60,.2);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .modal-header-left { display: flex; align-items: center; gap: .8rem; }
+  .modal-icon {
+    width: 36px; height: 36px; background: rgba(196,154,60,.15);
+    border: 1px solid rgba(196,154,60,.3); border-radius: 2px;
+    display: flex; align-items: center; justify-content: center; font-size: .95rem;
+  }
+  .modal-title { font-family: var(--serif); font-size: 1rem; font-weight: 600; color: var(--cream); }
+  .modal-subtitle { font-family: var(--sans); font-size: .66rem; color: rgba(245,239,224,.45); margin-top: .1rem; }
+  .modal-close {
+    background: none; border: none; cursor: pointer;
+    color: rgba(245,239,224,.4); font-size: 1.3rem; line-height: 1;
+    padding: 2px 6px; transition: color var(--transition);
+  }
+  .modal-close:hover { color: var(--gold); }
+  .modal-body { padding: 1.75rem; }
+
+  /* Login */
+  .portal-brand { text-align: center; margin-bottom: 1.5rem; }
+  .portal-brand .abbr { font-family: var(--serif); font-size: 1.7rem; font-weight: 700; color: var(--roast); letter-spacing: .06em; }
+  .portal-brand p { font-family: var(--sans); font-size: .76rem; color: var(--mid); margin-top: .2rem; }
+  .portal-tabs { display: flex; border-bottom: 1px solid var(--light-rule); margin-bottom: 1.5rem; }
+  .portal-tab {
+    flex: 1; padding: .65rem; text-align: center; cursor: pointer;
+    font-family: var(--sans); font-size: .7rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--mid); border-bottom: 2px solid transparent;
+    transition: var(--transition);
+  }
+  .portal-tab.active { color: var(--mahogany); border-color: var(--gold); }
+  .portal-tab-panel { display: none; }
+  .portal-tab-panel.active { display: block; }
+  .demo-hint {
+    text-align: center; margin-top: 1rem;
+    font-family: var(--sans); font-size: .75rem; color: var(--mid);
+  }
+  .demo-hint a { color: var(--mahogany); cursor: pointer; text-decoration: underline; }
+
+  /* Dashboard */
+  .dash-user {
+    background: var(--parchment); border: 1px solid var(--light-rule);
+    border-radius: 2px; padding: 1.1rem; display: flex;
+    align-items: center; gap: .9rem; margin-bottom: 1.25rem;
+  }
+  .dash-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--mahogany); display: flex; align-items: center;
+    justify-content: center; font-size: 1.25rem; flex-shrink: 0;
+  }
+  .dash-name { font-family: var(--serif); font-size: 1rem; font-weight: 600; color: var(--roast); }
+  .dash-meta { font-family: var(--sans); font-size: .7rem; color: var(--mid); margin-top: .12rem; }
+  .dash-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--light-rule); margin-bottom: 1.25rem; }
+  .dash-stat { background: var(--cream); padding: .9rem; text-align: center; }
+  .dash-stat-val { font-family: var(--serif); font-size: 1.5rem; font-weight: 700; color: var(--roast); display: block; }
+  .dash-stat-lbl { font-family: var(--sans); font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--mid); margin-top: .15rem; }
+  .dash-section-title { font-family: var(--sans); font-size: .66rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--mahogany); margin-bottom: .75rem; }
+  .dash-services { display: grid; grid-template-columns: repeat(3,1fr); gap: .55rem; }
+  .dash-svc {
+    background: var(--cream); border: 1px solid var(--light-rule);
+    border-radius: 2px; padding: .9rem .6rem; cursor: pointer;
+    text-align: center; transition: var(--transition); user-select: none;
+  }
+  .dash-svc:hover { border-color: var(--gold); background: var(--parchment); }
+  .dash-svc .d-icon { font-size: 1.25rem; margin-bottom: .3rem; }
+  .dash-svc .d-label { font-family: var(--sans); font-size: .6rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--roast); }
+
+  /* Steps */
+  .form-steps { display: flex; margin-bottom: 1.75rem; }
+  .f-step { flex: 1; text-align: center; position: relative; }
+  .f-step:not(:last-child)::after {
+    content: ''; position: absolute; top: 12px; left: 50%; width: 100%;
+    height: 1px; background: var(--light-rule);
+  }
+  .f-circle {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--parchment); border: 1px solid var(--light-rule);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--sans); font-size: .65rem; font-weight: 700;
+    color: var(--mid); margin: 0 auto .35rem; position: relative; z-index: 1;
+    transition: var(--transition);
+  }
+  .f-step.active .f-circle { background: var(--mahogany); border-color: var(--mahogany); color: #fff; }
+  .f-step.done .f-circle { background: var(--moss); border-color: var(--moss); color: #fff; }
+  .f-lbl { font-family: var(--sans); font-size: .58rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mid); }
+  .f-step.active .f-lbl { color: var(--mahogany); }
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+  .step-nav { display: flex; justify-content: space-between; margin-top: 1.5rem; gap: .75rem; }
+  .review-row { display: flex; justify-content: space-between; padding: .6rem 0; border-bottom: 1px solid var(--light-rule); font-family: var(--sans); font-size: .84rem; }
+  .review-row:last-child { border-bottom: none; }
+  .review-key { color: var(--mid); }
+  .review-val { font-weight: 600; color: var(--roast); }
+
+  /* Rastreabilidade */
+  .trace-result { background: var(--cream); border: 1px solid var(--light-rule); border-radius: 2px; padding: 1.4rem; margin-top: 1.25rem; display: none; }
+  .trace-result.show { display: block; }
+  .trace-lot-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; padding-bottom: .9rem; border-bottom: 1px solid var(--light-rule); }
+  .trace-lot-id { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; color: var(--roast); }
+  .trace-lot-sub { font-family: var(--sans); font-size: .72rem; color: var(--mid); margin-top: .12rem; }
+  .trace-badge { font-family: var(--sans); font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 3px 9px; border-radius: 1px; }
+  .trace-badge.ok { background: var(--moss); color: #fff; }
+  .trace-event { display: flex; gap: .85rem; padding: .6rem 0; border-bottom: 1px solid var(--light-rule); }
+  .trace-event:last-child { border-bottom: none; }
+  .trace-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--moss); margin-top: 4px; flex-shrink: 0; }
+  .trace-dot.gold { background: var(--gold); }
+  .trace-ev-title { font-family: var(--sans); font-size: .82rem; font-weight: 600; color: var(--roast); }
+  .trace-ev-sub { font-family: var(--sans); font-size: .72rem; color: var(--mid); margin-top: .08rem; }
+
+  /* Estatísticas */
+  .stats-filters { display: flex; gap: .45rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .stats-btn {
+    font-family: var(--sans); font-size: .66rem; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    background: var(--parchment); border: 1px solid var(--light-rule);
+    color: var(--mid); padding: 5px 11px; border-radius: 1px; cursor: pointer;
+    transition: var(--transition);
+  }
+  .stats-btn.active { background: var(--mahogany); border-color: var(--mahogany); color: #fff; }
+  .bar-chart { display: flex; flex-direction: column; gap: .6rem; }
+  .bar-row { display: flex; align-items: center; gap: .7rem; }
+  .bar-lbl { font-family: var(--sans); font-size: .73rem; color: var(--mid); min-width: 75px; }
+  .bar-track { flex: 1; background: var(--parchment); height: 9px; border-radius: 1px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--mahogany); border-radius: 1px; transition: width 1.1s cubic-bezier(.4,0,.2,1); width: 0; }
+  .bar-fill.green { background: var(--moss); }
+  .bar-fill.gold { background: var(--gold); }
+  .bar-val { font-family: var(--sans); font-size: .7rem; font-weight: 600; color: var(--roast); min-width: 55px; text-align: right; }
+  .stats-table { width: 100%; border-collapse: collapse; margin-top: 1.25rem; font-family: var(--sans); font-size: .8rem; }
+  .stats-table th { text-align: left; font-size: .63rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--mahogany); padding: .5rem .65rem; border-bottom: 2px solid var(--light-rule); }
+  .stats-table td { padding: .55rem .65rem; border-bottom: 1px solid var(--light-rule); color: var(--slate); }
+  .stats-table tr:last-child td { border-bottom: none; }
+
+  /* Biblioteca */
+  .lib-filters { display: flex; gap: .45rem; margin-bottom: 1.1rem; flex-wrap: wrap; }
+  .lib-btn { font-family: var(--sans); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--parchment); border: 1px solid var(--light-rule); color: var(--mid); padding: 5px 11px; border-radius: 1px; cursor: pointer; transition: var(--transition); }
+  .lib-btn.active { background: var(--mahogany); border-color: var(--mahogany); color: #fff; }
+  .lib-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: .75rem; }
+  .lib-item { background: var(--cream); border: 1px solid var(--light-rule); border-radius: 2px; padding: 1rem; cursor: pointer; transition: var(--transition); }
+  .lib-item:hover { border-color: var(--gold); }
+  .lib-badge { font-family: var(--sans); font-size: .57rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 2px 6px; border-radius: 1px; display: inline-block; margin-bottom: .4rem; }
+  .lib-badge.pdf { background: var(--mahogany); color: #fff; }
+  .lib-badge.video { background: var(--moss); color: #fff; }
+  .lib-badge.form { background: var(--gold); color: var(--espresso); }
+  .lib-title { font-family: var(--serif); font-size: .88rem; color: var(--roast); margin-bottom: .2rem; }
+  .lib-meta { font-family: var(--sans); font-size: .7rem; color: var(--mid); }
+
+  /* Success */
+  .modal-success { text-align: center; padding: 2.25rem 1.5rem; }
+  .modal-success .s-icon { font-size: 2.25rem; margin-bottom: .65rem; }
+  .modal-success h3 { font-family: var(--serif); font-size: 1.25rem; color: var(--roast); margin-bottom: .55rem; }
+  .modal-success p { font-family: var(--sans); font-size: .86rem; color: var(--mid); margin-bottom: 1.1rem; }
+  .ref-badge { display: inline-block; background: var(--parchment); border: 1px solid var(--light-rule); font-family: var(--sans); font-size: .78rem; font-weight: 700; letter-spacing: .12em; color: var(--roast); padding: .5rem 1.1rem; border-radius: 2px; margin-bottom: 1.1rem; }
+  .btn-ghost { display: inline-flex; align-items: center; gap: .4rem; font-family: var(--sans); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--mahogany); background: none; border: 1px solid rgba(107,53,32,.25); padding: .6rem 1.25rem; border-radius: 2px; cursor: pointer; transition: var(--transition); }
+  .btn-ghost:hover { border-color: var(--mahogany); background: var(--parchment); }
+
+  @media (max-width: 600px) {
+    .modal-box, .modal-box.modal-wide { max-height: 95vh; }
+    .dash-services { grid-template-columns: repeat(2,1fr); }
+    .lib-grid { grid-template-columns: 1fr; }
+    .stats-table { font-size: .73rem; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ──────────── NAV ──────────── -->
+<nav id="nav">
+  <a href="#hero" class="nav-logo">
+    <div class="nav-logo-emblem">☕</div>
+    <div class="nav-logo-text">
+      <span class="abbr">INCA</span>
+      <span class="full" data-lang="pt">Instituto Nacional do Café · Angola</span>
+      <span class="full lang-en">National Coffee Institute · Angola</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about" data-lang="pt">Instituto</a><a href="#about" data-lang="en">About</a></li>
+    <li><a href="#fileiras" data-lang="pt">Fileiras</a><a href="#fileiras" data-lang="en">Crops</a></li>
+    <li><a href="#projectos" data-lang="pt">Projectos</a><a href="#projectos" data-lang="en">Projects</a></li>
+    <li><a href="#noticias" data-lang="pt">Notícias</a><a href="#noticias" data-lang="en">News</a></li>
+    <li><a href="#servicos" data-lang="pt">Serviços</a><a href="#servicos" data-lang="en">Services</a></li>
+    <li><a href="#contacto" data-lang="pt">Contacto</a><a href="#contacto" data-lang="en">Contact</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:.5rem;">
+    <div class="lang-toggle">
+      <button class="active" onclick="setLang('pt')">PT</button>
+      <button onclick="setLang('en')">EN</button>
+    </div>
+    <button class="menu-toggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ──────────── HERO ──────────── -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grain"></div>
+  <div class="hero-deco"></div>
+  <div class="hero-deco"></div>
+  <div class="hero-deco"></div>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow" data-lang="pt">República de Angola · Ministério da Agricultura</p>
+    <p class="hero-eyebrow" data-lang="en">Republic of Angola · Ministry of Agriculture</p>
+    <h1 class="hero-title">
+      <span data-lang="pt">Instituto Nacional</span>
+      <span data-lang="en">National Institute</span>
+      <em data-lang="pt">do Café</em>
+      <em data-lang="en">of Coffee</em>
+    </h1>
+    <p class="hero-sub" data-lang="pt">Fomento, coordenação técnica e desenvolvimento das fileiras do Café, Dendém, Cacau e Caju em Angola.</p>
+    <p class="hero-sub" data-lang="en">Promoting, coordinating and developing the Coffee, Palm Oil, Cocoa and Cashew value chains across Angola.</p>
+    <div class="hero-ctas">
+      <a href="#about" class="btn-primary" data-lang="pt">Conhecer o Instituto</a>
+      <a href="#about" class="btn-primary" data-lang="en">Discover Our Mission</a>
+      <a href="login.html" class="btn-outline" data-lang="pt">Portal do Produtor</a>
+      <a href="login.html" class="btn-outline" data-lang="en">Producer Portal</a>
+    </div>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-num">18</span>
+      <span class="hero-stat-lbl" data-lang="pt">Províncias</span>
+      <span class="hero-stat-lbl" data-lang="en">Provinces</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">4</span>
+      <span class="hero-stat-lbl" data-lang="pt">Fileiras Agrícolas</span>
+      <span class="hero-stat-lbl" data-lang="en">Agricultural Chains</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">50+</span>
+      <span class="hero-stat-lbl" data-lang="pt">Anos de História</span>
+      <span class="hero-stat-lbl" data-lang="en">Years of History</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">120k</span>
+      <span class="hero-stat-lbl" data-lang="pt">Produtores</span>
+      <span class="hero-stat-lbl" data-lang="en">Producers</span>
+    </div>
+  </div>
+
+  <div class="hero-scroll"><span></span></div>
+</section>
+
+<!-- ──────────── ABOUT ──────────── -->
+<section id="about">
+  <div class="about-grid">
+    <div class="about-visual reveal">
+      <div class="about-accent"></div>
+      <div class="about-img-frame">
+        <div class="about-img-inner">☕</div>
+      </div>
+      <div class="about-badge">
+        <span class="about-badge-num">1975</span>
+        <span class="about-badge-text" data-lang="pt">Fundação</span>
+        <span class="about-badge-text" data-lang="en">Founded</span>
+      </div>
+    </div>
+    <div class="reveal" style="transition-delay:.15s">
+      <p class="section-label" data-lang="pt">Sobre o Instituto</p>
+      <p class="section-label" data-lang="en">About the Institute</p>
+      <h2 class="section-title" data-lang="pt">Coordenação técnica para um sector estratégico</h2>
+      <h2 class="section-title" data-lang="en">Technical coordination for a strategic sector</h2>
+      <div class="rule"></div>
+      <p class="section-lead" data-lang="pt">O INCA é o organismo público responsável por assegurar o fomento, a coordenação técnica, o acompanhamento e a transferência tecnológica no domínio das fileiras agrícolas estratégicas de Angola — Café, Palmeira de Dendém, Cacau e Caju.</p>
+      <p class="section-lead" data-lang="en">INCA is the public body responsible for promoting, technically coordinating and overseeing the transfer of technology across Angola's strategic agricultural value chains — Coffee, Oil Palm, Cocoa and Cashew.</p>
+      <div class="about-pillars">
+        <div class="about-pillar">
+          <div class="about-pillar-title" data-lang="pt">Fomento</div>
+          <div class="about-pillar-title" data-lang="en">Promotion</div>
+          <p data-lang="pt">Apoio técnico e financeiro a produtores e cooperativas em todo o território nacional.</p>
+          <p data-lang="en">Technical and financial support to producers and cooperatives across the national territory.</p>
+        </div>
+        <div class="about-pillar">
+          <div class="about-pillar-title" data-lang="pt">I&D</div>
+          <div class="about-pillar-title" data-lang="en">R&D</div>
+          <p data-lang="pt">Investigação aplicada e transferência de tecnologia para modernização do sector.</p>
+          <p data-lang="en">Applied research and technology transfer for sector modernisation.</p>
+        </div>
+        <div class="about-pillar">
+          <div class="about-pillar-title" data-lang="pt">Fiscalização</div>
+          <div class="about-pillar-title" data-lang="en">Oversight</div>
+          <p data-lang="pt">Controlo da qualidade e execução das políticas públicas nas fileiras agrícolas.</p>
+          <p data-lang="en">Quality control and implementation of public policies in agricultural chains.</p>
+        </div>
+        <div class="about-pillar">
+          <div class="about-pillar-title" data-lang="pt">Exportação</div>
+          <div class="about-pillar-title" data-lang="en">Exports</div>
+          <p data-lang="pt">Certificação de origem e rastreabilidade para acesso aos mercados internacionais.</p>
+          <p data-lang="en">Origin certification and traceability for access to international markets.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── FILEIRAS ──────────── -->
+<section id="fileiras">
+  <div class="fileiras-header reveal">
+    <p class="section-label" data-lang="pt">Cadeias de Valor</p>
+    <p class="section-label" data-lang="en">Value Chains</p>
+    <h2 class="section-title light" data-lang="pt">As Quatro Fileiras Agrícolas</h2>
+    <h2 class="section-title light" data-lang="en">The Four Agricultural Chains</h2>
+    <div class="rule"></div>
+    <p class="section-lead light" data-lang="pt">Angola possui condições edafoclimáticas únicas para a produção de quatro culturas de elevado valor estratégico e exportador.</p>
+    <p class="section-lead light" data-lang="en">Angola has unique soil and climate conditions for producing four crops of high strategic and export value.</p>
+  </div>
+  <div class="fileiras-grid reveal" style="transition-delay:.1s">
+    <div class="fileira-card">
+      <span class="fileira-icon">☕</span>
+      <h3 class="fileira-name" data-lang="pt">Café</h3>
+      <h3 class="fileira-name" data-lang="en">Coffee</h3>
+      <span class="fileira-latin">Coffea robusta / arabica</span>
+      <p class="fileira-desc" data-lang="pt">Angola foi o 4.º maior exportador mundial de café na década de 70. O INCA lidera a reabilitação desta fileira histórica, com foco no Uíge, Kwanza Norte e Malanje.</p>
+      <p class="fileira-desc" data-lang="en">Angola was the world's 4th largest coffee exporter in the 1970s. INCA leads the rehabilitation of this historic chain, focused on Uíge, Kwanza Norte and Malanje.</p>
+      <div class="fileira-stat-row">
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">12k t</span>
+          <span class="fileira-stat-key" data-lang="pt">Produção Anual</span>
+          <span class="fileira-stat-key" data-lang="en">Annual Output</span>
+        </div>
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">3</span>
+          <span class="fileira-stat-key" data-lang="pt">Regiões Principais</span>
+          <span class="fileira-stat-key" data-lang="en">Key Regions</span>
+        </div>
+      </div>
+      <a href="#" class="fileira-more" data-lang="pt">Saber mais →</a>
+      <a href="#" class="fileira-more" data-lang="en">Learn more →</a>
+    </div>
+    <div class="fileira-card">
+      <span class="fileira-icon">🌴</span>
+      <h3 class="fileira-name" data-lang="pt">Dendém</h3>
+      <h3 class="fileira-name" data-lang="en">Oil Palm</h3>
+      <span class="fileira-latin">Elaeis guineensis</span>
+      <p class="fileira-desc" data-lang="pt">A palmeira de dendém tem enorme potencial agroindustrial em Angola, com extensas áreas aptas no norte e centro do país para produção de óleo de palma.</p>
+      <p class="fileira-desc" data-lang="en">Oil palm has enormous agro-industrial potential in Angola, with extensive suitable areas in the north and centre for palm oil production.</p>
+      <div class="fileira-stat-row">
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">85k ha</span>
+          <span class="fileira-stat-key" data-lang="pt">Área Potencial</span>
+          <span class="fileira-stat-key" data-lang="en">Potential Area</span>
+        </div>
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">5</span>
+          <span class="fileira-stat-key" data-lang="pt">Províncias Alvo</span>
+          <span class="fileira-stat-key" data-lang="en">Target Provinces</span>
+        </div>
+      </div>
+      <a href="#" class="fileira-more" data-lang="pt">Saber mais →</a>
+      <a href="#" class="fileira-more" data-lang="en">Learn more →</a>
+    </div>
+    <div class="fileira-card">
+      <span class="fileira-icon">🍫</span>
+      <h3 class="fileira-name" data-lang="pt">Cacau</h3>
+      <h3 class="fileira-name" data-lang="en">Cocoa</h3>
+      <span class="fileira-latin">Theobroma cacao</span>
+      <p class="fileira-desc" data-lang="pt">O cacau angolano apresenta características organolépticas distintas, com grande interesse no mercado de chocolate fino. Cabinda e Zaire são zonas de produção histórica.</p>
+      <p class="fileira-desc" data-lang="en">Angolan cocoa has distinct organoleptic characteristics with strong interest in the fine chocolate market. Cabinda and Zaire are historic production areas.</p>
+      <div class="fileira-stat-row">
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">4k t</span>
+          <span class="fileira-stat-key" data-lang="pt">Produção Anual</span>
+          <span class="fileira-stat-key" data-lang="en">Annual Output</span>
+        </div>
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">Fine</span>
+          <span class="fileira-stat-key" data-lang="pt">Certificação ICCO</span>
+          <span class="fileira-stat-key" data-lang="en">ICCO Certified</span>
+        </div>
+      </div>
+      <a href="#" class="fileira-more" data-lang="pt">Saber mais →</a>
+      <a href="#" class="fileira-more" data-lang="en">Learn more →</a>
+    </div>
+    <div class="fileira-card">
+      <span class="fileira-icon">🌿</span>
+      <h3 class="fileira-name" data-lang="pt">Caju</h3>
+      <h3 class="fileira-name" data-lang="en">Cashew</h3>
+      <span class="fileira-latin">Anacardium occidentale</span>
+      <p class="fileira-desc" data-lang="pt">O caju é uma das culturas com maior resiliência climática e crescimento exportador em Angola, com mercados estabelecidos na Europa e Ásia.</p>
+      <p class="fileira-desc" data-lang="en">Cashew is one of the most climate-resilient crops with growing export momentum from Angola, with established markets in Europe and Asia.</p>
+      <div class="fileira-stat-row">
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">30k t</span>
+          <span class="fileira-stat-key" data-lang="pt">Produção Anual</span>
+          <span class="fileira-stat-key" data-lang="en">Annual Output</span>
+        </div>
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">12+</span>
+          <span class="fileira-stat-key" data-lang="pt">Países Destino</span>
+          <span class="fileira-stat-key" data-lang="en">Export Markets</span>
+        </div>
+      </div>
+      <a href="#" class="fileira-more" data-lang="pt">Saber mais →</a>
+      <a href="#" class="fileira-more" data-lang="en">Learn more →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── NÚMEROS ──────────── -->
+<section id="numbers">
+  <div class="numbers-grid">
+    <div class="number-item reveal">
+      <span class="number-val">120<span class="number-unit">k</span></span>
+      <div class="number-label" data-lang="pt">Produtores Registados</div>
+      <div class="number-label" data-lang="en">Registered Producers</div>
+    </div>
+    <div class="number-item reveal" style="transition-delay:.1s">
+      <span class="number-val">18</span>
+      <div class="number-label" data-lang="pt">Províncias de Actuação</div>
+      <div class="number-label" data-lang="en">Provinces of Operation</div>
+    </div>
+    <div class="number-item reveal" style="transition-delay:.2s">
+      <span class="number-val">46<span class="number-unit">M</span></span>
+      <div class="number-label" data-lang="pt">USD Valor Exportado (2024)</div>
+      <div class="number-label" data-lang="en">USD Export Value (2024)</div>
+    </div>
+    <div class="number-item reveal" style="transition-delay:.3s">
+      <span class="number-val">340</span>
+      <div class="number-label" data-lang="pt">Cooperativas Apoiadas</div>
+      <div class="number-label" data-lang="en">Cooperatives Supported</div>
+    </div>
+    <div class="number-item reveal" style="transition-delay:.4s">
+      <span class="number-val">4</span>
+      <div class="number-label" data-lang="pt">Fileiras Agrícolas</div>
+      <div class="number-label" data-lang="en">Agricultural Value Chains</div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── PROJECTOS ──────────── -->
+<section id="projectos">
+  <div class="fileiras-header reveal">
+    <p class="section-label" data-lang="pt">Iniciativas Estratégicas</p>
+    <p class="section-label" data-lang="en">Strategic Initiatives</p>
+    <h2 class="section-title light" data-lang="pt">Projectos em Desenvolvimento</h2>
+    <h2 class="section-title light" data-lang="en">Projects Under Development</h2>
+    <div class="rule"></div>
+    <p class="section-lead light" data-lang="pt">O INCA coordena projectos estratégicos para modernização e expansão das fileiras agrícolas, com foco em sustentabilidade e inovação tecnológica.</p>
+    <p class="section-lead light" data-lang="en">INCA coordinates strategic projects for modernization and expansion of agricultural chains, focusing on sustainability and technological innovation.</p>
+  </div>
+  <div class="fileiras-grid reveal" style="transition-delay:.1s">
+    <div class="fileira-card">
+      <span class="fileira-icon">🌱</span>
+      <h3 class="fileira-name" data-lang="pt">Reabilitação Cafeeira</h3>
+      <h3 class="fileira-name" data-lang="en">Coffee Rehabilitation</h3>
+      <span class="fileira-latin">Programa Nacional do Café</span>
+      <p class="fileira-desc" data-lang="pt">Recuperação de 50.000 hectares de café nas províncias do Uíge, Kwanza Norte e Malanje, com introdução de variedades resistentes e tecnologia de irrigação.</p>
+      <p class="fileira-desc" data-lang="en">Recovery of 50,000 hectares of coffee in Uíge, Kwanza Norte and Malanje provinces, with introduction of resistant varieties and irrigation technology.</p>
+      <div class="fileira-stat-row">
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">$45M</span>
+          <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+          <span class="fileira-stat-key" data-lang="en">Investment</span>
+        </div>
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">2026</span>
+          <span class="fileira-stat-key" data-lang="pt">Conclusão</span>
+          <span class="fileira-stat-key" data-lang="en">Completion</span>
+        </div>
+      </div>
+      <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-cafe')">Ver detalhes →</a>
+      <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-cafe')">View details →</a>
+    </div>
+    <div class="fileira-card">
+      <span class="fileira-icon">🌴</span>
+      <h3 class="fileira-name" data-lang="pt">Expansão Dendém</h3>
+      <h3 class="fileira-name" data-lang="en">Palm Oil Expansion</h3>
+      <span class="fileira-latin">Cabo Ledo Development</span>
+      <p class="fileira-desc" data-lang="pt">Desenvolvimento de 20.000 hectares de dendezeiros no Cabo Ledo, com fábrica de processamento industrial e capacitação de 2.000 produtores.</p>
+      <p class="fileira-desc" data-lang="en">Development of 20,000 hectares of oil palm in Cabo Ledo, with industrial processing plant and training of 2,000 producers.</p>
+      <div class="fileira-stat-row">
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">$32M</span>
+          <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+          <span class="fileira-stat-key" data-lang="en">Investment</span>
+        </div>
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">15k t</span>
+          <span class="fileira-stat-key" data-lang="pt">Capacidade</span>
+          <span class="fileira-stat-key" data-lang="en">Capacity</span>
+        </div>
+      </div>
+      <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-dendem')">Ver detalhes →</a>
+      <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-dendem')">View details →</a>
+    </div>
+    <div class="fileira-card">
+      <span class="fileira-icon">🍫</span>
+      <h3 class="fileira-name" data-lang="pt">Modernização Cacau</h3>
+      <h3 class="fileira-name" data-lang="en">Cocoa Modernization</h3>
+      <span class="fileira-latin">Cuanza Sul Project</span>
+      <p class="fileira-desc" data-lang="pt">Modernização de 8.000 hectares de cacaueiros no Cuanza Sul com sistemas agroflorestais e certificação orgânica para mercados europeus.</p>
+      <p class="fileira-desc" data-lang="en">Modernization of 8,000 hectares of cocoa in Cuanza Sul with agroforestry systems and organic certification for European markets.</p>
+      <div class="fileira-stat-row">
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">$18M</span>
+          <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+          <span class="fileira-stat-key" data-lang="en">Investment</span>
+        </div>
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">500</span>
+          <span class="fileira-stat-key" data-lang="pt">Produtores</span>
+          <span class="fileira-stat-key" data-lang="en">Producers</span>
+        </div>
+      </div>
+      <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-cacau')">Ver detalhes →</a>
+      <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-cacau')">View details →</a>
+    </div>
+    <div class="fileira-card">
+      <span class="fileira-icon">🥜</span>
+      <h3 class="fileira-name" data-lang="pt">Desenvolvimento Caju</h3>
+      <h3 class="fileira-name" data-lang="en">Cashew Development</h3>
+      <span class="fileira-latin">Benguela Initiative</span>
+      <p class="fileira-desc" data-lang="pt">Expansão de 12.000 hectares de cajueiros em Benguela e Namibe com unidade de processamento industrial e exportação para Ásia.</p>
+      <p class="fileira-desc" data-lang="en">Expansion of 12,000 hectares of cashew in Benguela and Namibe with industrial processing unit and export to Asia.</p>
+      <div class="fileira-stat-row">
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">$12M</span>
+          <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+          <span class="fileira-stat-key" data-lang="en">Investment</span>
+        </div>
+        <div class="fileira-stat">
+          <span class="fileira-stat-val">8k t</span>
+          <span class="fileira-stat-key" data-lang="pt">Produção</span>
+          <span class="fileira-stat-key" data-lang="en">Production</span>
+        </div>
+      </div>
+      <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-caju')">Ver detalhes →</a>
+      <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-caju')">View details →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── NOTÍCIAS ──────────── -->
+<section id="noticias">
+  <div class="noticias-header reveal">
+    <div>
+      <p class="section-label" data-lang="pt">Notícias & Publicações</p>
+      <p class="section-label" data-lang="en">News & Publications</p>
+      <h2 class="section-title" data-lang="pt">Últimas Novidades</h2>
+      <h2 class="section-title" data-lang="en">Latest Updates</h2>
+    </div>
+    <a href="#" class="btn-outline" style="border-color:var(--light-rule);color:var(--mahogany);font-size:.72rem;" data-lang="pt">Ver todas →</a>
+    <a href="#" class="btn-outline" style="border-color:var(--light-rule);color:var(--mahogany);font-size:.72rem;" data-lang="en">View all →</a>
+  </div>
+  <div id="anunciosContainer" style="max-width: 1200px; margin: 0 auto 2rem;"></div>
+  <div id="noticiasContainer" class="news-grid reveal" style="transition-delay:.1s">
+    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--mid);">
+      <p>A carregar notícias...</p>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── SERVIÇOS ──────────── -->
+<section id="servicos">
+  <div class="servicos-inner">
+    <div class="servicos-header reveal">
+      <p class="section-label" data-lang="pt">Portal do Produtor & Serviços Online</p>
+      <p class="section-label" data-lang="en">Producer Portal & Online Services</p>
+      <h2 class="section-title light" data-lang="pt">Serviços Disponíveis</h2>
+      <h2 class="section-title light" data-lang="en">Available Services</h2>
+      <div class="rule"></div>
+      <p class="section-lead light" data-lang="pt">Aceda aos serviços do INCA online, sem deslocação às instalações do instituto.</p>
+      <p class="section-lead light" data-lang="en">Access INCA services online, without travelling to the institute's premises.</p>
+    </div>
+    <div class="servicos-grid reveal" style="transition-delay:.1s">
+      <div class="servico-card">
+        <span class="servico-num">01</span>
+        <div class="servico-icon">📋</div>
+        <h3 class="servico-title" data-lang="pt">Cadastro de Produtor</h3>
+        <h3 class="servico-title" data-lang="en">Producer Registration</h3>
+        <p class="servico-desc" data-lang="pt">Registe-se como produtor, actualize os seus dados e gira as suas parcelas agrícolas no sistema nacional.</p>
+        <p class="servico-desc" data-lang="en">Register as a producer, update your information and manage your agricultural plots in the national system.</p>
+        <a href="#" class="servico-link" data-lang="pt" onclick="portalOpen('cadastro');return false;">Iniciar registo →</a>
+        <a href="#" class="servico-link" data-lang="en" onclick="portalOpen('cadastro');return false;">Start registration →</a>
+      </div>
+      <div class="servico-card">
+        <span class="servico-num">02</span>
+        <div class="servico-icon">📜</div>
+        <h3 class="servico-title" data-lang="pt">Certificados de Origem</h3>
+        <h3 class="servico-title" data-lang="en">Origin Certificates</h3>
+        <p class="servico-desc" data-lang="pt">Solicite, acompanhe e descarregue certificados de origem para exportação dos seus produtos agrícolas.</p>
+        <p class="servico-desc" data-lang="en">Request, track and download origin certificates for exporting your agricultural products.</p>
+        <a href="#" class="servico-link" data-lang="pt" onclick="portalOpen('certificado');return false;">Solicitar certificado →</a>
+        <a href="#" class="servico-link" data-lang="en" onclick="portalOpen('certificado');return false;">Request certificate →</a>
+      </div>
+      <div class="servico-card">
+        <span class="servico-num">03</span>
+        <div class="servico-icon">🔍</div>
+        <h3 class="servico-title" data-lang="pt">Rastreabilidade de Lotes</h3>
+        <h3 class="servico-title" data-lang="en">Lot Traceability</h3>
+        <p class="servico-desc" data-lang="pt">Consulte o historial completo de qualquer lote registado no sistema — da colheita à exportação.</p>
+        <p class="servico-desc" data-lang="en">View the complete history of any registered lot in the system — from harvest to export.</p>
+        <a href="#" class="servico-link" data-lang="pt" onclick="portalOpen('rastreio');return false;">Consultar lote →</a>
+        <a href="#" class="servico-link" data-lang="en" onclick="portalOpen('rastreio');return false;">Query lot →</a>
+      </div>
+      <div class="servico-card">
+        <span class="servico-num">04</span>
+        <div class="servico-icon">💰</div>
+        <h3 class="servico-title" data-lang="pt">Pedido de Apoio / Subsídio</h3>
+        <h3 class="servico-title" data-lang="en">Support / Subsidy Request</h3>
+        <p class="servico-desc" data-lang="pt">Submeta pedidos de apoio técnico, insumos, equipamentos ou microcrédito agrícola directamente online.</p>
+        <p class="servico-desc" data-lang="en">Submit requests for technical support, inputs, equipment or agricultural microcredit directly online.</p>
+        <a href="#" class="servico-link" data-lang="pt" onclick="portalOpen('apoio');return false;">Submeter pedido →</a>
+        <a href="#" class="servico-link" data-lang="en" onclick="portalOpen('apoio');return false;">Submit request →</a>
+      </div>
+      <div class="servico-card">
+        <span class="servico-num">05</span>
+        <div class="servico-icon">📊</div>
+        <h3 class="servico-title" data-lang="pt">Estatísticas & Relatórios</h3>
+        <h3 class="servico-title" data-lang="en">Statistics & Reports</h3>
+        <p class="servico-desc" data-lang="pt">Aceda a dados de produção, exportação, preços e indicadores sectoriais actualizados mensalmente.</p>
+        <p class="servico-desc" data-lang="en">Access production, export, pricing and sector indicators updated monthly.</p>
+        <a href="#" class="servico-link" data-lang="pt" onclick="portalOpen('estatisticas');return false;">Ver estatísticas →</a>
+        <a href="#" class="servico-link" data-lang="en" onclick="portalOpen('estatisticas');return false;">View statistics →</a>
+      </div>
+      <div class="servico-card">
+        <span class="servico-num">06</span>
+        <div class="servico-icon">🎓</div>
+        <h3 class="servico-title" data-lang="pt">Formação & Biblioteca</h3>
+        <h3 class="servico-title" data-lang="en">Training & Library</h3>
+        <p class="servico-desc" data-lang="pt">Aceda a manuais técnicos, vídeos formativos e registe-se em sessões de capacitação presencial e online.</p>
+        <p class="servico-desc" data-lang="en">Access technical manuals, training videos and register for in-person and online capacity-building sessions.</p>
+        <a href="#" class="servico-link" data-lang="pt" onclick="portalOpen('formacao');return false;">Aceder à biblioteca →</a>
+        <a href="#" class="servico-link" data-lang="en" onclick="portalOpen('formacao');return false;">Access library →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── FAQ ──────────── -->
+<section id="faq" style="background: var(--cream); padding: 6rem 4vw;">
+  <div style="max-width: 900px; margin: 0 auto;">
+    <div class="reveal" style="text-align: center; margin-bottom: 3.5rem;">
+      <p class="section-label" data-lang="pt">Perguntas Frequentes</p>
+      <p class="section-label" data-lang="en">Frequently Asked Questions</p>
+      <h2 class="section-title" data-lang="pt">Como Podemos Ajudar?</h2>
+      <h2 class="section-title" data-lang="en">How Can We Help?</h2>
+      <div class="rule" style="margin: 1.5rem auto;"></div>
+      <p class="section-lead" style="margin: 0 auto;" data-lang="pt">Encontre respostas rápidas às perguntas mais comuns sobre registo, certificação e serviços do INCA.</p>
+      <p class="section-lead" style="margin: 0 auto;" data-lang="en">Find quick answers to the most common questions about registration, certification and INCA services.</p>
+    </div>
+    
+    <div id="faqContainer" class="reveal" style="transition-delay:.15s;">
+      <div style="text-align: center; padding: 2rem; color: var(--mid);">
+        <p>A carregar perguntas frequentes...</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── CONTACTO ──────────── -->
+<section id="contacto">
+  <div class="contacto-grid">
+    <div class="reveal">
+      <p class="section-label" data-lang="pt">Contacto</p>
+      <p class="section-label" data-lang="en">Contact</p>
+      <h2 class="section-title" data-lang="pt">Fale Connosco</h2>
+      <h2 class="section-title" data-lang="en">Get in Touch</h2>
+      <div class="rule"></div>
+      <p class="section-lead" style="margin-bottom:2rem;" data-lang="pt">Para informações, parcerias institucionais ou apoio técnico, contacte-nos através dos seguintes meios.</p>
+      <p class="section-lead" style="margin-bottom:2rem;" data-lang="en">For information, institutional partnerships or technical support, contact us through the following channels.</p>
+
+      <div class="contacto-info-item">
+        <div class="contacto-info-icon">📍</div>
+        <div>
+          <div class="contacto-info-label" data-lang="pt">Sede</div>
+          <div class="contacto-info-label" data-lang="en">Headquarters</div>
+          <div class="contacto-info-val">Rua Frederich Engels, Luanda, Angola</div>
+        </div>
+      </div>
+      <div class="contacto-info-item">
+        <div class="contacto-info-icon">📞</div>
+        <div>
+          <div class="contacto-info-label" data-lang="pt">Telefone</div>
+          <div class="contacto-info-label" data-lang="en">Phone</div>
+          <div class="contacto-info-val">+244 222 390 000</div>
+        </div>
+      </div>
+      <div class="contacto-info-item">
+        <div class="contacto-info-icon">✉️</div>
+        <div>
+          <div class="contacto-info-label">Email</div>
+          <div class="contacto-info-val">geral@inca.gov.ao</div>
+        </div>
+      </div>
+      <div class="contacto-info-item">
+        <div class="contacto-info-icon">🕐</div>
+        <div>
+          <div class="contacto-info-label" data-lang="pt">Horário</div>
+          <div class="contacto-info-label" data-lang="en">Hours</div>
+          <div class="contacto-info-val" data-lang="pt">Segunda–Sexta: 08h00–17h00</div>
+          <div class="contacto-info-val" data-lang="en">Mon–Fri: 08:00–17:00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal" style="transition-delay:.15s">
+      <div style="background:var(--cream);padding:2.5rem;border:1px solid var(--light-rule);border-radius:2px;">
+        <h3 style="font-family:var(--serif);font-size:1.2rem;color:var(--espresso);margin-bottom:1.5rem;" data-lang="pt">Enviar Mensagem</h3>
+        <h3 style="font-family:var(--serif);font-size:1.2rem;color:var(--espresso);margin-bottom:1.5rem;" data-lang="en">Send a Message</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" data-lang="pt">Nome</label>
+            <label class="form-label" data-lang="en">Name</label>
+            <input type="text" class="form-control" placeholder="Seu nome completo">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" placeholder="email@exemplo.com">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-lang="pt">Assunto</label>
+          <label class="form-label" data-lang="en">Subject</label>
+          <select class="form-control">
+            <option data-lang="pt">Informações Gerais</option>
+            <option data-lang="en">General Information</option>
+            <option data-lang="pt">Cadastro de Produtor</option>
+            <option data-lang="en">Producer Registration</option>
+            <option data-lang="pt">Parcerias Institucionais</option>
+            <option data-lang="en">Institutional Partnerships</option>
+            <option data-lang="pt">Certificação / Exportação</option>
+            <option data-lang="en">Certification / Exports</option>
+            <option data-lang="pt">Apoio Técnico</option>
+            <option data-lang="en">Technical Support</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-lang="pt">Mensagem</label>
+          <label class="form-label" data-lang="en">Message</label>
+          <textarea class="form-control" data-lang="pt" placeholder="Descreva a sua mensagem..."></textarea>
+          <textarea class="form-control" data-lang="en" placeholder="Describe your message..."></textarea>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" data-lang="pt">Enviar Mensagem</button>
+        <button class="btn-primary" style="width:100%;justify-content:center;" data-lang="en">Send Message</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── FOOTER ──────────── -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="abbr">INCA</div>
+      <p data-lang="pt">Instituto Nacional do Café de Angola. Fomento, coordenação técnica e desenvolvimento das fileiras agrícolas estratégicas nacionais desde 1975.</p>
+      <p data-lang="en">National Coffee Institute of Angola. Promoting and coordinating Angola's strategic agricultural value chains since 1975.</p>
+    </div>
+    <div>
+      <div class="footer-col-title" data-lang="pt">Fileiras</div>
+      <div class="footer-col-title" data-lang="en">Crops</div>
+      <ul class="footer-links">
+        <li><a href="#fileiras" data-lang="pt">Café</a><a href="#fileiras" data-lang="en">Coffee</a></li>
+        <li><a href="#fileiras" data-lang="pt">Dendém</a><a href="#fileiras" data-lang="en">Oil Palm</a></li>
+        <li><a href="#fileiras" data-lang="pt">Cacau</a><a href="#fileiras" data-lang="en">Cocoa</a></li>
+        <li><a href="#fileiras" data-lang="pt">Caju</a><a href="#fileiras" data-lang="en">Cashew</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title" data-lang="pt">Instituto</div>
+      <div class="footer-col-title" data-lang="en">Institute</div>
+      <ul class="footer-links">
+        <li><a href="#about" data-lang="pt">Sobre o INCA</a><a href="#about" data-lang="en">About INCA</a></li>
+        <li><a href="#noticias" data-lang="pt">Notícias</a><a href="#noticias" data-lang="en">News</a></li>
+        <li><a href="#" data-lang="pt">Publicações</a><a href="#" data-lang="en">Publications</a></li>
+        <li><a href="#" data-lang="pt">Legislação</a><a href="#" data-lang="en">Legislation</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title" data-lang="pt">Serviços</div>
+      <div class="footer-col-title" data-lang="en">Services</div>
+      <ul class="footer-links">
+        <li><a href="#servicos" data-lang="pt">Portal do Produtor</a><a href="#servicos" data-lang="en">Producer Portal</a></li>
+        <li><a href="#servicos" data-lang="pt">Certificados</a><a href="#servicos" data-lang="en">Certificates</a></li>
+        <li><a href="#servicos" data-lang="pt">Estatísticas</a><a href="#servicos" data-lang="en">Statistics</a></li>
+        <li><a href="#contacto" data-lang="pt">Contacto</a><a href="#contacto" data-lang="en">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p data-lang="pt">© 2026 Instituto Nacional do Café de Angola. Todos os direitos reservados.</p>
+    <p data-lang="en">© 2026 National Coffee Institute of Angola. All rights reserved.</p>
+    <div class="footer-social">
+      <a href="#" class="social-btn" title="Facebook">f</a>
+      <a href="#" class="social-btn" title="Twitter/X">𝕏</a>
+      <a href="#" class="social-btn" title="LinkedIn">in</a>
+      <a href="#" class="social-btn" title="YouTube">▶</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════ PORTAL MODALS ══════════ -->
+
+<!-- LOGIN -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">☕</div>
+        <div>
+          <div class="modal-title">Portal do Produtor</div>
+          <div class="modal-subtitle">Instituto Nacional do Café de Angola</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-login')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="portal-brand">
+        <div class="abbr">INCA</div>
+        <p>Acesso reservado a produtores e cooperativas registadas</p>
+      </div>
+      <div class="portal-tabs">
+        <div class="portal-tab active" onclick="loginTab('entrar',this)">Entrar</div>
+        <div class="portal-tab" onclick="loginTab('registar',this)">Criar Conta</div>
+      </div>
+      <div class="portal-tab-panel active" id="tab-entrar">
+        <div class="form-group">
+          <label class="form-label">Número de Identificação (NBI / NIF)</label>
+          <input type="text" class="form-control" id="login-nbi" placeholder="Ex: 006123456LA041">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Código PIN / Senha</label>
+          <input type="password" class="form-control" id="login-pin" placeholder="••••••">
+        </div>
+        <div id="login-error" style="color:#c0392b;font-family:var(--sans);font-size:.78rem;margin-bottom:.75rem;display:none;">
+          Por favor preencha os campos de identificação e senha.
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">Entrar no Portal</button>
+        <div class="demo-hint">Modo demonstração: <a onclick="demoLogin()">entrar como produtor demo</a></div>
+      </div>
+      <div class="portal-tab-panel" id="tab-registar">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" class="form-control" placeholder="Seu nome completo">
+          </div>
+          <div class="form-group">
+            <label class="form-label">NBI / NIF</label>
+            <input type="text" class="form-control" placeholder="Número de identificação">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input type="tel" class="form-control" placeholder="+244 9XX XXX XXX">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Criar PIN (mín. 6 dígitos)</label>
+          <input type="password" class="form-control" placeholder="••••••">
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" onclick="doRegistar()">Submeter Pedido de Acesso</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="modal-overlay" id="modal-dash">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🏠</div>
+        <div>
+          <div class="modal-title">Meu Portal</div>
+          <div class="modal-subtitle">Painel do Produtor</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;">
+        <button class="btn-ghost" style="font-size:.6rem;padding:.35rem .75rem;" onclick="doLogout()">Sair</button>
+        <button class="modal-close" onclick="closeModal('modal-dash')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="dash-user">
+        <div class="dash-avatar">👤</div>
+        <div>
+          <div class="dash-name" id="dash-username">Produtor</div>
+          <div class="dash-meta" id="dash-nbi">NBI: —</div>
+        </div>
+      </div>
+      <div class="dash-stats">
+        <div class="dash-stat">
+          <span class="dash-stat-val">3</span>
+          <div class="dash-stat-lbl">Parcelas Activas</div>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-val">1</span>
+          <div class="dash-stat-lbl">Cert. Pendentes</div>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-val">2</span>
+          <div class="dash-stat-lbl">Pedidos em Análise</div>
+        </div>
+      </div>
+      <div class="dash-section-title">Serviços Disponíveis</div>
+      <div class="dash-services">
+        <div class="dash-svc" onclick="switchModal('modal-dash','modal-cadastro')">
+          <div class="d-icon">📋</div>
+          <div class="d-label">Cadastro</div>
+        </div>
+        <div class="dash-svc" onclick="switchModal('modal-dash','modal-certificado')">
+          <div class="d-icon">📜</div>
+          <div class="d-label">Certificados</div>
+        </div>
+        <div class="dash-svc" onclick="switchModal('modal-dash','modal-rastreio')">
+          <div class="d-icon">🔍</div>
+          <div class="d-label">Rastreio</div>
+        </div>
+        <div class="dash-svc" onclick="switchModal('modal-dash','modal-apoio')">
+          <div class="d-icon">💰</div>
+          <div class="d-label">Apoio</div>
+        </div>
+        <div class="dash-svc" onclick="switchModal('modal-dash','modal-estatisticas')">
+          <div class="d-icon">📊</div>
+          <div class="d-label">Estatísticas</div>
+        </div>
+        <div class="dash-svc" onclick="switchModal('modal-dash','modal-formacao')">
+          <div class="d-icon">🎓</div>
+          <div class="d-label">Formação</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CADASTRO DE PRODUTOR -->
+<div class="modal-overlay" id="modal-cadastro">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">📋</div>
+        <div>
+          <div class="modal-title">Cadastro de Produtor</div>
+          <div class="modal-subtitle">Registo no Sistema Nacional</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-cadastro')">✕</button>
+    </div>
+    <div class="modal-body" id="cadastro-body">
+      <div class="form-steps">
+        <div class="f-step active" id="cad-step-1">
+          <div class="f-circle">1</div>
+          <div class="f-lbl">Dados Pessoais</div>
+        </div>
+        <div class="f-step" id="cad-step-2">
+          <div class="f-circle">2</div>
+          <div class="f-lbl">Exploração</div>
+        </div>
+        <div class="f-step" id="cad-step-3">
+          <div class="f-circle">3</div>
+          <div class="f-lbl">Revisão</div>
+        </div>
+      </div>
+      <div class="step-panel active" id="cad-panel-1">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nome Completo *</label>
+            <input type="text" class="form-control" id="cad-nome" placeholder="Nome e apelido">
+          </div>
+          <div class="form-group">
+            <label class="form-label">NBI *</label>
+            <input type="text" class="form-control" id="cad-nbi" placeholder="Número de BI">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Telefone *</label>
+            <input type="tel" class="form-control" id="cad-tel" placeholder="+244 9XX XXX XXX">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="cad-email" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Província *</label>
+          <select class="form-control" id="cad-prov">
+            <option value="">Seleccionar província…</option>
+            <option>Uíge</option><option>Malanje</option><option>Cuanza Norte</option>
+            <option>Cuanza Sul</option><option>Bié</option><option>Huambo</option>
+            <option>Benguela</option><option>Huíla</option><option>Cabinda</option>
+            <option>Zaire</option><option>Bengo</option><option>Luanda</option>
+            <option>Lunda Norte</option><option>Lunda Sul</option><option>Moxico</option>
+            <option>Cuando Cubango</option><option>Namibe</option><option>Cunene</option>
+          </select>
+        </div>
+        <div class="step-nav">
+          <span></span>
+          <button class="btn-primary" onclick="cadNext(1)">Seguinte →</button>
+        </div>
+      </div>
+      <div class="step-panel" id="cad-panel-2">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fileira Principal *</label>
+            <select class="form-control" id="cad-fileira">
+              <option value="">Seleccionar…</option>
+              <option>Café</option><option>Dendém</option>
+              <option>Cacau</option><option>Caju</option><option>Mista</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Área Total (ha) *</label>
+            <input type="number" class="form-control" id="cad-area" placeholder="Ex: 12.5" min="0.1" step="0.1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Município / Localidade *</label>
+          <input type="text" class="form-control" id="cad-mun" placeholder="Nome do município ou aldeia">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Latitude (opcional)</label>
+            <input type="text" class="form-control" id="cad-lat" placeholder="-8.8368">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Longitude (opcional)</label>
+            <input type="text" class="form-control" id="cad-lon" placeholder="13.2343">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de Produtor</label>
+          <select class="form-control" id="cad-tipo">
+            <option>Individual / Familiar</option>
+            <option>Cooperativa Agrícola</option>
+            <option>Empresa Agrícola</option>
+            <option>Associação de Produtores</option>
+          </select>
+        </div>
+        <div class="step-nav">
+          <button class="btn-ghost" onclick="cadGo(1)">← Anterior</button>
+          <button class="btn-primary" onclick="cadNext(2)">Seguinte →</button>
+        </div>
+      </div>
+      <div class="step-panel" id="cad-panel-3">
+        <div id="cad-review"></div>
+        <div class="step-nav">
+          <button class="btn-ghost" onclick="cadGo(2)">← Anterior</button>
+          <button class="btn-primary" onclick="submitCadastro()">Submeter Registo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CERTIFICADOS DE ORIGEM -->
+<div class="modal-overlay" id="modal-certificado">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">📜</div>
+        <div>
+          <div class="modal-title">Certificados de Origem</div>
+          <div class="modal-subtitle">Solicitação para Exportação</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-certificado')">✕</button>
+    </div>
+    <div class="modal-body" id="cert-body">
+      <div class="form-group">
+        <label class="form-label">Produto *</label>
+        <select class="form-control" id="cert-produto">
+          <option value="">Seleccionar produto…</option>
+          <option>Café Verde (Arábica)</option><option>Café Verde (Robusta)</option>
+          <option>Café Torrado</option><option>Cacau em Amêndoa</option>
+          <option>Pasta de Cacau</option><option>Caju (Amêndoa)</option>
+          <option>Óleo de Dendém</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quantidade (kg) *</label>
+          <input type="number" class="form-control" id="cert-qty" placeholder="Ex: 5000" min="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nº Lote / Referência</label>
+          <input type="text" class="form-control" id="cert-lote" placeholder="Ex: CAFÉ-2026-001">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">País de Destino *</label>
+        <select class="form-control" id="cert-destino">
+          <option value="">Seleccionar país…</option>
+          <option>Portugal</option><option>Brasil</option><option>Estados Unidos</option>
+          <option>Alemanha</option><option>Itália</option><option>França</option>
+          <option>Reino Unido</option><option>China</option><option>Japão</option>
+          <option>Emirados Árabes Unidos</option><option>África do Sul</option><option>Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data Prevista de Exportação *</label>
+        <input type="date" class="form-control" id="cert-data">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <textarea class="form-control" style="min-height:80px" placeholder="Informações adicionais sobre a exportação…"></textarea>
+      </div>
+      <button class="btn-primary" style="width:100%;justify-content:center;" onclick="submitCert()">Solicitar Certificado</button>
+    </div>
+  </div>
+</div>
+
+<!-- RASTREABILIDADE -->
+<div class="modal-overlay" id="modal-rastreio">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🔍</div>
+        <div>
+          <div class="modal-title">Rastreabilidade de Lotes</div>
+          <div class="modal-subtitle">Historial da Colheita à Exportação</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-rastreio')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Código do Lote</label>
+        <div style="display:flex;gap:.6rem;">
+          <input type="text" class="form-control" id="rastreio-code" placeholder="Ex: CAFÉ-2026-001 ou INC-LT-00234">
+          <button class="btn-primary" style="white-space:nowrap;padding:.85rem 1.25rem;" onclick="doRastreio()">Consultar</button>
+        </div>
+        <div style="font-family:var(--sans);font-size:.72rem;color:var(--mid);margin-top:.4rem;">
+          Experimente: <a onclick="document.getElementById('rastreio-code').value='CAFÉ-2026-047';doRastreio()" style="color:var(--mahogany);cursor:pointer;">CAFÉ-2026-047</a>
+          &nbsp;·&nbsp;<a onclick="document.getElementById('rastreio-code').value='INC-LT-00891';doRastreio()" style="color:var(--mahogany);cursor:pointer;">INC-LT-00891</a>
+        </div>
+      </div>
+      <div class="trace-result" id="trace-result"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PEDIDO DE APOIO -->
+<div class="modal-overlay" id="modal-apoio">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">💰</div>
+        <div>
+          <div class="modal-title">Pedido de Apoio / Subsídio</div>
+          <div class="modal-subtitle">Apoio Técnico e Financeiro</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-apoio')">✕</button>
+    </div>
+    <div class="modal-body" id="apoio-body">
+      <div class="form-group">
+        <label class="form-label">Tipo de Apoio Solicitado *</label>
+        <select class="form-control" id="apoio-tipo">
+          <option value="">Seleccionar tipo…</option>
+          <option>Insumos Agrícolas (Fertilizantes, Pesticidas)</option>
+          <option>Equipamentos e Ferramentas</option>
+          <option>Microcrédito Agrícola</option>
+          <option>Apoio Técnico / Assistência Agronómica</option>
+          <option>Sementes e Material Vegetal Certificado</option>
+          <option>Subsídio à Produção</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fileira a que se destina *</label>
+        <select class="form-control" id="apoio-fileira">
+          <option value="">Seleccionar…</option>
+          <option>Café</option><option>Dendém</option><option>Cacau</option><option>Caju</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor Estimado (AOA)</label>
+        <input type="number" class="form-control" id="apoio-valor" placeholder="Ex: 500000" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição da Necessidade *</label>
+        <textarea class="form-control" id="apoio-desc" style="min-height:100px" placeholder="Descreva detalhadamente o apoio que necessita e a sua finalidade…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Documentos de Suporte</label>
+        <div style="background:var(--parchment);border:2px dashed rgba(107,53,32,.2);border-radius:2px;padding:1.5rem;text-align:center;font-family:var(--sans);font-size:.78rem;color:var(--mid);cursor:pointer;">
+          📎 Clique para anexar documentos (PDF, JPG — máx. 5MB)
+        </div>
+      </div>
+      <button class="btn-primary" style="width:100%;justify-content:center;" onclick="submitApoio()">Submeter Pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ESTATÍSTICAS -->
+<div class="modal-overlay" id="modal-estatisticas">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">📊</div>
+        <div>
+          <div class="modal-title">Estatísticas & Relatórios</div>
+          <div class="modal-subtitle">Dados actualizados — Março 2026</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-estatisticas')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="stats-filters">
+        <button class="stats-btn active" onclick="statsFilter('producao',this)">Produção</button>
+        <button class="stats-btn" onclick="statsFilter('exportacao',this)">Exportação</button>
+        <button class="stats-btn" onclick="statsFilter('precos',this)">Preços</button>
+      </div>
+      <div id="stats-content">
+        <div id="stats-producao">
+          <div style="font-family:var(--sans);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mahogany);margin-bottom:1rem;">Produção por Fileira — 2025 (toneladas)</div>
+          <div class="bar-chart">
+            <div class="bar-row"><span class="bar-lbl">Café</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span class="bar-val">42 380 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">Dendém</span><div class="bar-track"><div class="bar-fill green" style="width:55%"></div></div><span class="bar-val">29 810 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">Cacau</span><div class="bar-track"><div class="bar-fill gold" style="width:28%"></div></div><span class="bar-val">15 200 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">Caju</span><div class="bar-track"><div class="bar-fill" style="width:18%"></div></div><span class="bar-val">9 740 t</span></div>
+          </div>
+          <div style="font-family:var(--sans);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mahogany);margin:1.5rem 0 .75rem;">Principais Províncias Produtoras de Café</div>
+          <div class="bar-chart">
+            <div class="bar-row"><span class="bar-lbl">Uíge</span><div class="bar-track"><div class="bar-fill" style="width:85%"></div></div><span class="bar-val">36 020 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">Malanje</span><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><span class="bar-val">12 710 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">Cuanza Norte</span><div class="bar-track"><div class="bar-fill" style="width:18%"></div></div><span class="bar-val">7 640 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">Cuanza Sul</span><div class="bar-track"><div class="bar-fill" style="width:11%"></div></div><span class="bar-val">4 870 t</span></div>
+          </div>
+        </div>
+        <div id="stats-exportacao" style="display:none">
+          <div style="font-family:var(--sans);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mahogany);margin-bottom:1rem;">Exportações de Café por Destino — 2025</div>
+          <div class="bar-chart">
+            <div class="bar-row"><span class="bar-lbl">Portugal</span><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><span class="bar-val">18 200 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">Alemanha</span><div class="bar-track"><div class="bar-fill green" style="width:42%"></div></div><span class="bar-val">11 000 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">EUA</span><div class="bar-track"><div class="bar-fill gold" style="width:25%"></div></div><span class="bar-val">6 500 t</span></div>
+            <div class="bar-row"><span class="bar-lbl">Outros</span><div class="bar-track"><div class="bar-fill" style="width:25%"></div></div><span class="bar-val">6 680 t</span></div>
+          </div>
+          <table class="stats-table" style="margin-top:1.5rem;">
+            <thead><tr><th>Fileira</th><th>Qtd. Exportada</th><th>Valor (USD)</th><th>Var. Anual</th></tr></thead>
+            <tbody>
+              <tr><td>Café</td><td>42 380 t</td><td>$84,7M</td><td style="color:#2C4A2E">+12%</td></tr>
+              <tr><td>Cacau</td><td>8 400 t</td><td>$29,1M</td><td style="color:#2C4A2E">+8%</td></tr>
+              <tr><td>Caju</td><td>3 200 t</td><td>$6,4M</td><td style="color:#C49A3C">+2%</td></tr>
+              <tr><td>Dendém</td><td>1 800 t</td><td>$1,9M</td><td style="color:#c0392b">-3%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="stats-precos" style="display:none">
+          <div style="font-family:var(--sans);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mahogany);margin-bottom:1rem;">Preços ao Produtor — Março 2026</div>
+          <table class="stats-table">
+            <thead><tr><th>Produto</th><th>Preço (AOA/kg)</th><th>Preço (USD/kg)</th><th>Var. Mês</th></tr></thead>
+            <tbody>
+              <tr><td>Café Verde Arábica</td><td>1 850</td><td>$2.05</td><td style="color:#2C4A2E">+4.2%</td></tr>
+              <tr><td>Café Verde Robusta</td><td>1 420</td><td>$1.57</td><td style="color:#2C4A2E">+2.8%</td></tr>
+              <tr><td>Cacau Amêndoa</td><td>3 200</td><td>$3.54</td><td style="color:#2C4A2E">+6.1%</td></tr>
+              <tr><td>Caju (Amêndoa)</td><td>2 650</td><td>$2.93</td><td style="color:#c0392b">-1.2%</td></tr>
+              <tr><td>Óleo de Dendém</td><td>890</td><td>$0.98</td><td style="color:#C49A3C">+0.5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FORMAÇÃO & BIBLIOTECA -->
+<div class="modal-overlay" id="modal-formacao">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🎓</div>
+        <div>
+          <div class="modal-title">Formação & Biblioteca</div>
+          <div class="modal-subtitle">Manuais, Vídeos e Sessões de Capacitação</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-formacao')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="lib-filters">
+        <button class="lib-btn active" onclick="libFilter('todos',this)">Todos</button>
+        <button class="lib-btn" onclick="libFilter('pdf',this)">Manuais PDF</button>
+        <button class="lib-btn" onclick="libFilter('video',this)">Vídeos</button>
+        <button class="lib-btn" onclick="libFilter('form',this)">Formulários</button>
+      </div>
+      <div class="lib-grid">
+        <div class="lib-item" data-type="pdf">
+          <span class="lib-badge pdf">PDF</span>
+          <div class="lib-title">Boas Práticas no Cultivo do Café Arábica</div>
+          <div class="lib-meta">INCA · 48 pág. · Actualizado Jan 2026</div>
+        </div>
+        <div class="lib-item" data-type="video">
+          <span class="lib-badge video">Vídeo</span>
+          <div class="lib-title">Controlo de Pragas na Cultura do Cacau</div>
+          <div class="lib-meta">INCA / FAO · 22 min · Português</div>
+        </div>
+        <div class="lib-item" data-type="pdf">
+          <span class="lib-badge pdf">PDF</span>
+          <div class="lib-title">Manual de Pós-Colheita do Caju</div>
+          <div class="lib-meta">INCA · 32 pág. · 2025</div>
+        </div>
+        <div class="lib-item" data-type="form">
+          <span class="lib-badge form">Formulário</span>
+          <div class="lib-title">Ficha de Declaração de Colheita</div>
+          <div class="lib-meta">INCA-FOR-2026-01 · Versão actual</div>
+        </div>
+        <div class="lib-item" data-type="video">
+          <span class="lib-badge video">Vídeo</span>
+          <div class="lib-title">Poda e Rejuvenescimento do Cafeeiro</div>
+          <div class="lib-meta">INCA · 35 min · Português</div>
+        </div>
+        <div class="lib-item" data-type="pdf">
+          <span class="lib-badge pdf">PDF</span>
+          <div class="lib-title">Guia de Fertilização da Palmeira Dendém</div>
+          <div class="lib-meta">INCA · 28 pág. · 2025</div>
+        </div>
+        <div class="lib-item" data-type="form">
+          <span class="lib-badge form">Formulário</span>
+          <div class="lib-title">Pedido de Certificado Fitossanitário</div>
+          <div class="lib-meta">INCA-FOR-2026-04 · Versão actual</div>
+        </div>
+        <div class="lib-item" data-type="pdf">
+          <span class="lib-badge pdf">PDF</span>
+          <div class="lib-title">Regulamento de Exportação — Café 2026</div>
+          <div class="lib-meta">MINAGRI / INCA · 14 pág. · Fev 2026</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Funções Globais ──
+function openModal(id) {
+  console.log('openModal called with id:', id);
+  const modal = document.getElementById(id);
+  console.log('modal element:', modal);
+  if (modal) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    console.log('Modal opened successfully');
+  } else {
+    console.error('Modal not found with id:', id);
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+  if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
+}
+
+// ── GLOBAL LANG SWITCH FUNCTION ──
+function setLang(lang) {
+  document.body.classList.toggle('lang-en', lang === 'en');
+  document.querySelectorAll('.lang-toggle button').forEach((btn, i) => {
+    btn.classList.toggle('active', (i === 0 && lang === 'pt') || (i === 1 && lang === 'en'));
+  });
+  document.documentElement.lang = lang;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // ── LANG SWITCH ──
+  // setLang function moved to global scope above
+
+  // ── NAV SCROLL ──
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  // ── REVEAL ON SCROLL ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ── SMOOTH ANCHOR ──
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const href = a.getAttribute('href');
+      if (href === '#') return;
+      const target = document.querySelector(href);
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  });
+
+  // ════════════════════════════════
+  //  PORTAL
+  // ════════════════════════════════
+  const API = '/api';
+  let portalSession = null;   // { produtor, stats }
+  let pendingService = null;
+
+  // ── Utilitários ──────────────────────────────────────────────
+  function switchModal(from, to) {
+    closeModal(from);
+    setTimeout(() => openModal(to.replace('modal-','')), 150);
+  }
+  function setBtn(btn, loading) {
+    btn.disabled = loading;
+    btn._orig = btn._orig || btn.textContent;
+    btn.textContent = loading ? 'A processar…' : btn._orig;
+  }
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+  }
+
+  // Close on backdrop / Escape
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const active = document.querySelector('.modal-overlay.active');
+      if (active) closeModal(active.id);
+    }
+  });
+
+  function portalOpen(service) {
+    if (service === 'login') { openModal('login'); return; }
+    if (!portalSession) { pendingService = service; openModal('login'); }
+    else openModal(service);
+  }
+
+  // ── Login tabs ───────────────────────────────────────────────
+  function loginTab(panel, btn) {
+    document.querySelectorAll('.portal-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.portal-tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + panel).classList.add('active');
+  }
+
+  // ── Login com API ────────────────────────────────────────────
+  async function doLogin() {
+    const nbi  = document.getElementById('login-nbi').value.trim();
+    const pin  = document.getElementById('login-pin').value.trim();
+    const btn  = event.target;
+    showError('login-error', '');
+    if (!nbi || pin.length < 4) { showError('login-error', 'Preencha o NBI e o PIN (mínimo 4 caracteres).'); return; }
+    setBtn(btn, true);
+    try {
+      const r = await fetch(`${API}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nbi, pin })
+      });
+      const data = await r.json();
+      if (!r.ok) { showError('login-error', data.error || 'Erro ao autenticar.'); return; }
+      finalizeLogin(data);
+    } catch {
+      showError('login-error', 'Sem ligação ao servidor. Verifique se o servidor está activo.');
+    } finally { setBtn(btn, false); }
+  }
+
+  async function demoLogin() {
+    document.getElementById('login-nbi').value = 'DEMO-006-UIG-2026';
+    document.getElementById('login-pin').value = '123456';
+    await doLogin();
+  }
+
+  // ── Registo de nova conta ────────────────────────────────────
+  async function doRegistar() {
+    const btn = event.target;
+    const nome = document.querySelector('#tab-registar input[type=text]').value.trim();
+    const nbi  = document.querySelectorAll('#tab-registar input[type=text]')[1].value.trim();
+    const tel  = document.querySelector('#tab-registar input[type=tel]').value.trim();
+    const email= document.querySelector('#tab-registar input[type=email]').value.trim();
+    const pin  = document.querySelector('#tab-registar input[type=password]').value.trim();
+    if (!nome || !nbi || !pin) { alert('Nome, NBI e PIN são obrigatórios.'); return; }
+    setBtn(btn, true);
+    try {
+      const r = await fetch(`${API}/registar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, nbi, telefone: tel, email, pin })
+      });
+      const data = await r.json();
+      if (!r.ok) { alert(data.error || 'Erro ao criar conta.'); return; }
+      showSuccess('modal-login', 'Conta Criada!', data.message);
+    } catch { alert('Sem ligação ao servidor.'); }
+    finally { setBtn(btn, false); }
+  }
+
+  function finalizeLogin(data) {
+    portalSession = data;
+    document.getElementById('dash-username').textContent = data.produtor.nome;
+    document.getElementById('dash-nbi').textContent = 'NBI: ' + data.produtor.nbi;
+    // Actualiza stats no dashboard
+    const s = data.stats || {};
+    const vals = document.querySelectorAll('.dash-stat-val');
+    if (vals[0]) vals[0].textContent = s.parcelas   ?? '—';
+    if (vals[1]) vals[1].textContent = s.certPend   ?? '—';
+    if (vals[2]) vals[2].textContent = s.pedAnali   ?? '—';
+    closeModal('modal-login');
+    setTimeout(() => {
+      if (pendingService) { openModal(pendingService); pendingService = null; }
+      else openModal('dash');
+    }, 200);
+  }
+
+  function doLogout() {
+    portalSession = null;
+    closeModal('modal-dash');
+  }
+
+  // ── CADASTRO steps ───────────────────────────────────────────
+  function cadNext(step) {
+    const v = {
+      1: [['cad-nome','Nome completo'],['cad-nbi','NBI'],['cad-tel','Telefone'],['cad-prov','Província']],
+      2: [['cad-fileira','Fileira'],['cad-area','Área'],['cad-mun','Município']]
+    };
+    for (const [id, lbl] of v[step]) {
+      if (!document.getElementById(id).value.trim()) {
+        alert('Por favor preencha: ' + lbl);
+        document.getElementById(id).focus(); return;
+      }
+    }
+    if (step === 2) buildReview();
+    cadGo(step + 1);
+  }
+  function cadGo(step) {
+    [1,2,3].forEach(s => {
+      document.getElementById('cad-panel-' + s).classList.toggle('active', s === step);
+      const el = document.getElementById('cad-step-' + s);
+      el.classList.toggle('active', s === step);
+      el.classList.toggle('done', s < step);
+    });
+  }
+  function buildReview() {
+    const fields = [
+      ['Nome','cad-nome'],['NBI','cad-nbi'],['Telefone','cad-tel'],
+      ['Email','cad-email'],['Província','cad-prov'],['Fileira','cad-fileira'],
+      ['Área (ha)','cad-area'],['Município','cad-mun'],['Tipo','cad-tipo']
+    ];
+    document.getElementById('cad-review').innerHTML =
+      '<div style="font-family:var(--sans);font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mahogany);margin-bottom:.75rem;">Confirme os seus dados</div>' +
+      fields.map(([k,id]) => {
+        const v = document.getElementById(id).value;
+        return v ? `<div class="review-row"><span class="review-key">${k}</span><span class="review-val">${v}</span></div>` : '';
+      }).join('');
+  }
+
+  async function submitCadastro() {
+    const btn = document.querySelector('#cad-panel-3 .btn-primary');
+    setBtn(btn, true);
+    try {
+      const payload = {
+        produtor_id: portalSession?.produtor?.id || null,
+        nome:        document.getElementById('cad-nome').value,
+        nbi:         document.getElementById('cad-nbi').value,
+        telefone:    document.getElementById('cad-tel').value,
+        email:       document.getElementById('cad-email').value,
+        provincia:   document.getElementById('cad-prov').value,
+        municipio:   document.getElementById('cad-mun').value,
+        fileira:     document.getElementById('cad-fileira').value,
+        area_ha:     document.getElementById('cad-area').value,
+        tipo_produtor: document.getElementById('cad-tipo').value,
+        latitude:    document.getElementById('cad-lat').value || null,
+        longitude:   document.getElementById('cad-lon').value || null,
+      };
+      const r = await fetch(`${API}/produtores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await r.json();
+      if (!r.ok) { alert(data.error || 'Erro ao submeter.'); return; }
+      document.getElementById('cadastro-body').innerHTML = `<div class="modal-success">
+        <div class="s-icon">✅</div>
+        <h3>Registo Submetido com Sucesso</h3>
+        <p>O seu cadastro foi guardado. Será analisado em 3–5 dias úteis.</p>
+        <div class="ref-badge">${data.referencia}</div><br>
+        <button class="btn-ghost" onclick="closeModal('modal-cadastro')">Fechar</button>
+      </div>`;
+    } catch { alert('Sem ligação ao servidor.'); }
+    finally { setBtn(btn, false); }
+  }
+
+  // ── CERTIFICADO ─────────────────────────────────────────────
+  async function submitCert() {
+    const btn = document.querySelector('#modal-certificado .btn-primary');
+    const produto = document.getElementById('cert-produto').value;
+    const destino = document.getElementById('cert-destino').value;
+    const qty     = document.getElementById('cert-qty').value;
+    const data_ex = document.getElementById('cert-data').value;
+    if (!produto || !destino || !qty || !data_ex) { alert('Preencha os campos obrigatórios.'); return; }
+    setBtn(btn, true);
+    try {
+      const r = await fetch(`${API}/certificados`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          produtor_id: portalSession?.produtor?.id || null,
+          produto, quantidade: qty,
+          lote: document.getElementById('cert-lote').value,
+          destino, data_exportacao: data_ex
+        })
+      });
+      const data = await r.json();
+      if (!r.ok) { alert(data.error || 'Erro ao submeter.'); return; }
+      document.getElementById('cert-body').innerHTML = `<div class="modal-success">
+        <div class="s-icon">📜</div>
+        <h3>Pedido de Certificado Submetido</h3>
+        <p>Certificado de Origem para <strong>${produto}</strong> → <strong>${destino}</strong>. Emissão em 2–3 dias úteis.</p>
+        <div class="ref-badge">${data.referencia}</div><br>
+        <button class="btn-ghost" onclick="closeModal('modal-certificado')">Fechar</button>
+      </div>`;
+    } catch { alert('Sem ligação ao servidor.'); }
+    finally { setBtn(btn, false); }
+  }
+
+  // ── RASTREIO ─────────────────────────────────────────────────
+  async function doRastreio() {
+    const code = document.getElementById('rastreio-code').value.trim();
+    if (!code) { alert('Introduza um código de lote.'); return; }
+    const res = document.getElementById('trace-result');
+    res.className = 'trace-result show';
+    res.innerHTML = '<div style="text-align:center;padding:1.5rem;font-family:var(--sans);font-size:.84rem;color:var(--mid);">A consultar…</div>';
+    try {
+      const r = await fetch(`${API}/rastreio/${encodeURIComponent(code)}`);
+      if (r.status === 404) {
+        res.innerHTML = `<div style="text-align:center;font-family:var(--sans);font-size:.86rem;color:var(--mid);padding:1rem 0;">
+          ⚠️ Lote <strong>${code}</strong> não encontrado. Verifique o código.</div>`;
+        return;
+      }
+      const { lote, eventos } = await r.json();
+      const estadoMap = { colhido:'Colhido', em_processamento:'Em Processamento', pronto:'Pronto', exportado:'Exportado' };
+      res.innerHTML = `
+        <div class="trace-lot-header">
+          <div>
+            <div class="trace-lot-id">${lote.codigo}</div>
+            <div class="trace-lot-sub">${lote.produto} · ${lote.provincia} · ${Number(lote.quantidade_kg).toLocaleString('pt-PT')} kg</div>
+          </div>
+          <span class="trace-badge ok">${estadoMap[lote.estado] || lote.estado}</span>
+        </div>
+        <div>
+          ${eventos.map(ev => `
+            <div class="trace-event">
+              <div class="trace-dot ${ev.tipo === 'destaque' ? 'gold' : ''}"></div>
+              <div>
+                <div class="trace-ev-title">${ev.titulo}</div>
+                <div class="trace-ev-sub">${ev.descricao || ''}</div>
+              </div>
+            </div>`).join('')}
+        </div>`;
+    } catch {
+      res.innerHTML = '<div style="text-align:center;font-family:var(--sans);font-size:.84rem;color:#c0392b;padding:1rem 0;">Erro ao consultar. Verifique a ligação ao servidor.</div>';
+    }
+  }
+
+  // ── APOIO ────────────────────────────────────────────────────
+  async function submitApoio() {
+    const btn     = document.querySelector('#modal-apoio .btn-primary');
+    const tipo    = document.getElementById('apoio-tipo').value;
+    const fileira = document.getElementById('apoio-fileira').value;
+    const desc    = document.getElementById('apoio-desc').value.trim();
+    if (!tipo || !fileira || !desc) { alert('Preencha os campos obrigatórios.'); return; }
+    setBtn(btn, true);
+    try {
+      const r = await fetch(`${API}/apoios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          produtor_id: portalSession?.produtor?.id || null,
+          tipo, fileira,
+          valor_estimado: document.getElementById('apoio-valor').value || null,
+          descricao: desc
+        })
+      });
+      const data = await r.json();
+      if (!r.ok) { alert(data.error || 'Erro ao submeter.'); return; }
+      document.getElementById('apoio-body').innerHTML = `<div class="modal-success">
+        <div class="s-icon">💰</div>
+        <h3>Pedido Submetido</h3>
+        <p>Pedido registado. A equipa técnica do INCA entrará em contacto em 5–7 dias úteis.</p>
+        <div class="ref-badge">${data.referencia}</div><br>
+        <button class="btn-ghost" onclick="closeModal('modal-apoio')">Fechar</button>
+      </div>`;
+    } catch { alert('Sem ligação ao servidor.'); }
+    finally { setBtn(btn, false); }
+  }
+
+  // ── ESTATÍSTICAS ─────────────────────────────────────────────
+  async function statsFilter(type, btn) {
+    document.querySelectorAll('.stats-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['producao','exportacao','precos'].forEach(t => {
+      const el = document.getElementById('stats-' + t);
+      if (el) el.style.display = t === type ? '' : 'none';
+    });
+    // Carrega dados da API se disponível, senão anima os dados estáticos
+    try {
+      const r = await fetch(`${API}/estatisticas?tipo=${type}`);
+      if (r.ok) renderStats(type, await r.json());
+    } catch { /* servidor offline – usa dados estáticos no HTML */ }
+    setTimeout(() => {
+      document.querySelectorAll('#stats-' + type + ' .bar-fill').forEach(b => {
+        const w = b.style.width; b.style.width = '0';
+        setTimeout(() => { b.style.width = w; }, 50);
+      });
+    }, 50);
+  }
+
+  function renderStats(type, data) {
+    // Actualiza os dados estáticos com os dados reais da BD
+    if (type === 'producao' && data.fileiras?.length) {
+      const max = Math.max(...data.fileiras.map(f => f.total_kg));
+      const chart = document.querySelector('#stats-producao .bar-chart');
+      if (chart) chart.innerHTML = data.fileiras.map(f => `
+        <div class="bar-row">
+          <span class="bar-lbl">${f.fileira}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(f.total_kg/max*100)}%"></div></div>
+          <span class="bar-val">${Number(f.total_kg).toLocaleString('pt-PT')} kg</span>
+        </div>`).join('');
+    }
+  }
+
+  // ── BIBLIOTECA ───────────────────────────────────────────────
+  function libFilter(type, btn) {
+    document.querySelectorAll('.lib-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.lib-item').forEach(item => {
+      item.style.display = (type === 'todos' || item.dataset.type === type) ? '' : 'none';
+    });
+  }
+
+  // ── SUCCESS genérico ─────────────────────────────────────────
+  function showSuccess(modalId, title, msg) {
+    const body = document.querySelector('#' + modalId + ' .modal-body');
+    if (!body) return;
+    body.innerHTML = `<div class="modal-success">
+      <div class="s-icon">✅</div>
+      <h3>${title}</h3>
+      <p>${msg}</p>
+      <button class="btn-ghost" onclick="closeModal('${modalId}')">Fechar</button>
+    </div>`;
+  }
+
+  // ── CARREGAR NOTÍCIAS E ANÚNCIOS ─────────────────────────────
+  async function carregarNoticias() {
+    try {
+      // Carregar artigos
+      const resArtigos = await fetch(`${API}/artigos?limit=4`);
+      if (resArtigos.ok) {
+        const data = await resArtigos.json();
+        const container = document.getElementById('noticiasContainer');
+        
+        if (data.artigos && data.artigos.length > 0) {
+          container.innerHTML = data.artigos.map((a, i) => {
+            const tagClass = i === 0 ? 'gold' : (a.categoria_slug === 'eventos' ? '' : 'green');
+            const tagText = a.categoria_nome || 'NOTÍCIAS';
+            const date = new Date(a.publicado_em);
+            const dateStr = date.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short', year: 'numeric' });
+            
+            return `
+              <div class="news-card ${i === 0 ? 'featured' : ''}">
+                <span class="news-tag ${tagClass}">${i === 0 ? 'DESTAQUE' : tagText.toUpperCase()}</span>
+                <h3 class="news-title">${a.titulo}</h3>
+                ${a.resumo ? `<p class="news-excerpt">${a.resumo}</p>` : ''}
+                <div class="news-meta">
+                  <span>${dateStr}</span>
+                  <div class="news-meta-dot"></div>
+                  <span>${a.categoria_nome || 'Notícias'}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          container.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--mid);">
+              <p>Nenhum artigo disponível no momento.</p>
+            </div>
+          `;
+        }
+      }
+
+      // Carregar anúncios activos
+      const resAnuncios = await fetch(`${API}/anuncios/activos`);
+      if (resAnuncios.ok) {
+        const data = await resAnuncios.json();
+        const container = document.getElementById('anunciosContainer');
+        
+        if (data.anuncios && data.anuncios.length > 0) {
+          const tipoColors = {
+            'urgente': '#DC2626',
+            'aviso': '#F59E0B',
+            'sucesso': '#16A34A',
+            'info': '#3B82F6'
+          };
+          
+          const tipoIcons = {
+            'urgente': '⚠️',
+            'aviso': '📢',
+            'sucesso': '✅',
+            'info': 'ℹ️'
+          };
+          
+          container.innerHTML = data.anuncios.map(a => {
+            const color = tipoColors[a.tipo] || tipoColors.info;
+            const icon = tipoIcons[a.tipo] || tipoIcons.info;
+            
+            return `
+              <div style="background: ${color}15; border-left: 4px solid ${color}; padding: 1.25rem 1.75rem; margin-bottom: 1rem; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.05);">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                  <span style="font-size: 1.25rem;">${icon}</span>
+                  <h4 style="font-family: var(--sans); font-size: 1rem; font-weight: 700; color: var(--espresso); margin: 0;">${a.titulo}</h4>
+                </div>
+                <p style="font-family: var(--sans); font-size: 0.9rem; color: var(--slate); line-height: 1.6; margin-bottom: ${a.link_url ? '0.75rem' : '0'};">${a.mensagem}</p>
+                ${a.link_url ? `<a href="${a.link_url}" style="font-family: var(--sans); font-size: 0.875rem; color: ${color}; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;">${a.link_texto || 'Saber mais'} →</a>` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    } catch (err) {
+      console.log('Erro ao carregar notícias:', err);
+      // Mantém o loading ou mostra mensagem de erro
+    }
+  }
+
+  // Carregar notícias ao iniciar a página
+  carregarNoticias();
+
+  // ── CARREGAR FAQ ──────────────────────────────────────────────
+  async function carregarFAQ() {
+    try {
+      const resFaq = await fetch(`${API}/faq`);
+      if (resFaq.ok) {
+        const data = await resFaq.json();
+        const container = document.getElementById('faqContainer');
+        
+        if (data.faq && data.faq.length > 0) {
+          // Agrupar por categoria
+          const porCategoria = {};
+          data.faq.forEach(f => {
+            const cat = f.categoria || 'Geral';
+            if (!porCategoria[cat]) porCategoria[cat] = [];
+            porCategoria[cat].push(f);
+          });
+          
+          let html = '';
+          Object.keys(porCategoria).forEach(categoria => {
+            html += `<div style="margin-bottom: 2rem;">`;
+            if (categoria !== 'Geral') {
+              html += `<div class="faq-category">${categoria}</div>`;
+            }
+            
+            porCategoria[categoria].forEach(f => {
+              html += `
+                <div class="faq-item" onclick="toggleFaq(this)">
+                  <div class="faq-question">
+                    <h3>${f.pergunta}</h3>
+                    <span class="faq-icon">▼</span>
+                  </div>
+                  <div class="faq-answer">
+                    <div class="faq-answer-content">${f.resposta}</div>
+                  </div>
+                </div>
+              `;
+            });
+            
+            html += `</div>`;
+          });
+          
+          container.innerHTML = html;
+        } else {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--mid);">
+              <p>Nenhuma pergunta frequente disponível no momento.</p>
+            </div>
+          `;
+        }
+      }
+    } catch (err) {
+      console.log('Erro ao carregar FAQ:', err);
+    }
+  }
+
+  // Toggle FAQ accordion
+  function toggleFaq(element) {
+    const wasActive = element.classList.contains('active');
+    
+    // Fechar todos os outros
+    document.querySelectorAll('.faq-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // Abrir o clicado se não estava ativo
+    if (!wasActive) {
+      element.classList.add('active');
+    }
+  }
+
+  // Carregar FAQ ao iniciar a página
+  carregarFAQ();
+
+  // Anima barras ao abrir modal de estatísticas
+  document.getElementById('modal-estatisticas').addEventListener('transitionend', () => {
+    if (document.getElementById('modal-estatisticas').classList.contains('active')) {
+      statsFilter('producao', document.querySelector('.stats-btn'));
+    }
+  });
+});
+</script>
+
+<!-- ══════════ PROJECTOS MODALS ══════════ -->
+
+<!-- PROJECTO CAFÉ -->
+<div class="modal-overlay" id="modal-projeto-cafe">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🌱</div>
+        <div>
+          <h3 class="modal-title" data-lang="pt">Reabilitação Cafeeira</h3>
+          <h3 class="modal-title" data-lang="en">Coffee Rehabilitation</h3>
+          <p class="modal-subtitle" data-lang="pt">Programa Nacional do Café</p>
+          <p class="modal-subtitle" data-lang="en">National Coffee Program</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="event.preventDefault(); closeModal('modal-projeto-cafe')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Visão Geral</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Overview</h4>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="pt">
+            Programa estratégico para recuperação da produção cafeeira em Angola, visando restaurar a posição histórica do país como um dos principais produtores mundiais. Foco em tecnologias modernas e sustentabilidade.
+          </p>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="en">
+            Strategic program to recover coffee production in Angola, aiming to restore the country's historical position as one of the world's main producers. Focus on modern technologies and sustainability.
+          </p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Estatísticas Chave</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Key Statistics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">50.000</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Hectares</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Hectares</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">$45M</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Investimento</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Investment</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Províncias Abrangidas</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Covered Provinces</h4>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Uíge</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Principal região</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Main region</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Kwanza Norte</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Expansão</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Expansion</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Malanje</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Desenvolvimento</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Development</div>
+        </div>
+      </div>
+      
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Tecnologias Implementadas</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Implemented Technologies</h4>
+      <ul style="font-family:var(--sans);color:var(--mid);line-height:1.8;list-style:none;padding:0;">
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Variedades resistentes a doenças</span><span data-lang="en">Disease-resistant varieties</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Sistemas de irrigação por gotejamento</span><span data-lang="en">Drip irrigation systems</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Processamento pós-colheita moderno</span><span data-lang="en">Modern post-harvest processing</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Certificação orgânica</span><span data-lang="en">Organic certification</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTO DENDÉM -->
+<div class="modal-overlay" id="modal-projeto-dendem">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🌴</div>
+        <div>
+          <h3 class="modal-title" data-lang="pt">Expansão Dendém</h3>
+          <h3 class="modal-title" data-lang="en">Palm Oil Expansion</h3>
+          <p class="modal-subtitle" data-lang="pt">Cabo Ledo Development</p>
+          <p class="modal-subtitle" data-lang="en">Cabo Ledo Development</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="event.preventDefault(); closeModal('modal-projeto-dendem')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Visão Geral</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Overview</h4>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="pt">
+            Desenvolvimento de uma das maiores plantações de dendezeiros em Angola, com capacidade para produzir 15.000 toneladas anuais de óleo de palma, reduzindo a dependência de importações.
+          </p>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="en">
+            Development of one of the largest oil palm plantations in Angola, with capacity to produce 15,000 annual tons of palm oil, reducing import dependency.
+          </p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Estatísticas Chave</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Key Statistics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">20.000</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Hectares</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Hectares</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">2.000</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Produtores</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Producers</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Infraestrutura Industrial</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Industrial Infrastructure</h4>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">15k t</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Capacidade/ano</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Capacity/year</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">$32M</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Investimento</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Investment</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">2025</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Operação</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Operation</div>
+        </div>
+      </div>
+      
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Componentes do Projecto</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Project Components</h4>
+      <ul style="font-family:var(--sans);color:var(--mid);line-height:1.8;list-style:none;padding:0;">
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Plantação de dendezeiros de elite</span><span data-lang="en">Elite oil palm plantation</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Fábrica de processamento industrial</span><span data-lang="en">Industrial processing plant</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Centro de capacitação de produtores</span><span data-lang="en">Producer training center</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Infraestrutura de logística</span><span data-lang="en">Logistics infrastructure</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTO CACAU -->
+<div class="modal-overlay" id="modal-projeto-cacau">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🍫</div>
+        <div>
+          <h3 class="modal-title" data-lang="pt">Modernização Cacau</h3>
+          <h3 class="modal-title" data-lang="en">Cocoa Modernization</h3>
+          <p class="modal-subtitle" data-lang="pt">Cuanza Sul Project</p>
+          <p class="modal-subtitle" data-lang="en">Cuanza Sul Project</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="event.preventDefault(); closeModal('modal-projeto-cacau')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Visão Geral</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Overview</h4>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="pt">
+            Modernização da produção de cacau com sistemas agroflorestais sustentáveis e certificação orgânica para acesso a mercados europeus de alto valor.
+          </p>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="en">
+            Modernization of cocoa production with sustainable agroforestry systems and organic certification for access to high-value European markets.
+          </p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Estatísticas Chave</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Key Statistics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">8.000</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Hectares</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Hectares</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">500</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Produtores</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Producers</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Sistemas Agroflorestais</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Agroforestry Systems</h4>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Sombra</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Árvores nativas</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Native trees</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Biodiversidade</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Múltiplas culturas</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Multiple crops</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Orgânico</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">Sem químicos</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">Chemical-free</div>
+        </div>
+      </div>
+      
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Certificação e Mercados</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Certification & Markets</h4>
+      <ul style="font-family:var(--sans);color:var(--mid);line-height:1.8;list-style:none;padding:0;">
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Certificação orgânica UE</span><span data-lang="en">EU organic certification</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Comércio justo</span><span data-lang="en">Fair trade</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Rastreabilidade completa</span><span data-lang="en">Full traceability</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Mercados premium europeus</span><span data-lang="en">Premium European markets</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTO CAJU -->
+<div class="modal-overlay" id="modal-projeto-caju">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🥜</div>
+        <div>
+          <h3 class="modal-title" data-lang="pt">Desenvolvimento Caju</h3>
+          <h3 class="modal-title" data-lang="en">Cashew Development</h3>
+          <p class="modal-subtitle" data-lang="pt">Benguela Initiative</p>
+          <p class="modal-subtitle" data-lang="en">Benguela Initiative</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="event.preventDefault(); closeModal('modal-projeto-caju')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Visão Geral</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Overview</h4>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="pt">
+            Expansão da produção de caju em Benguela e Namibe com unidade de processamento industrial e foco na exportação para mercados asiáticos em crescimento.
+          </p>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="en">
+            Expansion of cashew production in Benguela and Namibe with industrial processing unit and focus on export to growing Asian markets.
+          </p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Estatísticas Chave</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Key Statistics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">12.000</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Hectares</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Hectares</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">8k t</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Produção</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Production</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Mercados de Exportação</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Export Markets</h4>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem;">
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">China</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">40%</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">40%</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Índia</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">30%</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">30%</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Vietnam</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">20%</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">20%</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">UE</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="pt">10%</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);" data-lang="en">10%</div>
+        </div>
+      </div>
+      
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Unidade Industrial</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Industrial Unit</h4>
+      <ul style="font-family:var(--sans);color:var(--mid);line-height:1.8;list-style:none;padding:0;">
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Processamento de castanha</span><span data-lang="en">Nut processing</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Extração de óleo CNSL</span><span data-lang="en">CNSL oil extraction</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Armazenamento refrigerado</span><span data-lang="en">Cold storage</span></li>
+        <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Logística de exportação</span><span data-lang="en">Export logistics</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

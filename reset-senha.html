@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reset de Senha — Portal INCA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --espresso:   #1A0A00;
+    --roast:      #3B1A08;
+    --mahogany:   #6B3520;
+    --gold:       #C49A3C;
+    --cream:      #F5EFE0;
+    --parchment:  #EDE4CC;
+    --ivory:      #FAF7F0;
+    --moss:       #2C4A2E;
+    --sage:       #5A7A5C;
+    --slate:      #3D3D3D;
+    --mid:        #7A7A72;
+    --light-rule: rgba(100,70,40,.12);
+    --serif: 'Playfair Display', Georgia, serif;
+    --body:  'Libre Baskerville', Georgia, serif;
+    --sans:  'Source Sans 3', sans-serif;
+    --transition: .35s cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    background: var(--ivory);
+    color: var(--espresso);
+    font-family: var(--body);
+    line-height: 1.7;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .reset-header {
+    background: rgba(26,10,0,.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(196,154,60,.25);
+    padding: 1rem 4vw;
+    position: relative;
+    z-index: 10;
+  }
+
+  .header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 14px; text-decoration: none;
+  }
+
+  .logo-emblem {
+    width: 40px; height: 40px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    line-height: 1.2;
+  }
+
+  .logo-text .abbr {
+    display: block;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: .08em;
+  }
+
+  .logo-text .full {
+    display: block;
+    font-family: var(--sans);
+    font-size: .6rem;
+    color: rgba(245,239,224,.6);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .back-link {
+    color: rgba(245,239,224,.6);
+    text-decoration: none;
+    font-family: var(--sans);
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    transition: color var(--transition);
+  }
+
+  .back-link:hover {
+    color: var(--gold);
+  }
+
+  /* Main Content */
+  .reset-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 4vw;
+    background: 
+      radial-gradient(ellipse 80% 60% at 70% 50%, rgba(59,26,8,.1) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 80% at 20% 80%, rgba(44,74,46,.05) 0%, transparent 50%);
+  }
+
+  .reset-card {
+    background: white;
+    border: 1px solid var(--light-rule);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 24px 80px rgba(26,10,0,.15);
+    overflow: hidden;
+  }
+
+  .reset-header-card {
+    background: var(--espresso);
+    padding: 2rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(196,154,60,.2);
+  }
+
+  .reset-icon {
+    width: 60px; height: 60px;
+    background: rgba(196,154,60,.15);
+    border: 2px solid rgba(196,154,60,.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+  }
+
+  .reset-title {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: .5rem;
+  }
+
+  .reset-subtitle {
+    font-family: var(--sans);
+    font-size: .85rem;
+    color: rgba(245,239,224,.6);
+  }
+
+  .reset-body {
+    padding: 2.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-family: var(--sans);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--mahogany);
+    margin-bottom: .5rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 1rem;
+    background: var(--cream);
+    border: 1px solid rgba(100,70,40,.15);
+    border-radius: 2px;
+    font-family: var(--body);
+    font-size: 1rem;
+    color: var(--espresso);
+    outline: none;
+    transition: var(--transition);
+  }
+
+  .form-control:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(196,154,60,.1);
+  }
+
+  .form-hint {
+    font-family: var(--sans);
+    font-size: .75rem;
+    color: var(--mid);
+    margin-top: .5rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 2px;
+    font-family: var(--sans);
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--espresso);
+  }
+
+  .btn-primary:hover {
+    background: #d4aa4c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(196,154,60,.3);
+  }
+
+  .btn-primary:disabled {
+    background: var(--mid);
+    color: var(--cream);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--mid);
+    color: var(--mid);
+  }
+
+  .btn-secondary:hover {
+    background: var(--mid);
+    color: var(--cream);
+  }
+
+  .login-link {
+    text-align: center;
+    margin-top: 2rem;
+    font-family: var(--sans);
+    font-size: .85rem;
+    color: var(--mid);
+  }
+
+  .login-link a {
+    color: var(--mahogany);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .login-link a:hover {
+    color: var(--gold);
+  }
+
+  /* Alerts */
+  .alert {
+    padding: 1rem 1.5rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    border: 1px solid;
+  }
+
+  .alert-success {
+    background: rgba(40,167,69,.1);
+    border-color: rgba(40,167,69,.3);
+    color: #155724;
+  }
+
+  .alert-warning {
+    background: rgba(255,193,7,.1);
+    border-color: rgba(255,193,7,.3);
+    color: #856404;
+  }
+
+  .alert-error {
+    background: rgba(220,53,69,.1);
+    border-color: rgba(220,53,69,.3);
+    color: #721c24;
+  }
+
+  .alert-info {
+    background: rgba(23,162,184,.1);
+    border-color: rgba(23,162,184,.3);
+    color: #0c5460;
+  }
+
+  /* Success Section */
+  .success-section {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .success-icon {
+    width: 80px; height: 80px;
+    background: rgba(40,167,69,.1);
+    border: 2px solid rgba(40,167,69,.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1.5rem;
+    color: #155724;
+  }
+
+  .success-title {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--espresso);
+    margin-bottom: 1rem;
+  }
+
+  .success-message {
+    font-family: var(--sans);
+    font-size: 1rem;
+    color: var(--mid);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+  }
+
+  .demo-instructions {
+    background: var(--parchment);
+    border: 1px solid var(--light-rule);
+    border-radius: 4px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    text-align: left;
+  }
+
+  .demo-instructions h4 {
+    font-family: var(--serif);
+    font-size: 1rem;
+    color: var(--roast);
+    margin-bottom: 1rem;
+  }
+
+  .demo-instructions ol {
+    font-family: var(--sans);
+    font-size: .9rem;
+    color: var(--slate);
+    line-height: 1.8;
+    padding-left: 1.5rem;
+  }
+
+  .demo-instructions li {
+    margin-bottom: .5rem;
+  }
+
+  .demo-link {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--espresso);
+    padding: .5rem 1rem;
+    border-radius: 2px;
+    text-decoration: none;
+    font-family: var(--sans);
+    font-weight: 600;
+    margin-top: 1rem;
+    transition: var(--transition);
+  }
+
+  .demo-link:hover {
+    background: #d4aa4c;
+    transform: translateY(-1px);
+  }
+
+  /* Loading */
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--light-rule);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .reset-container {
+      padding: 1rem;
+    }
+
+    .reset-card {
+      max-width: none;
+    }
+
+    .reset-body {
+      padding: 1.5rem;
+    }
+
+    .header-content {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="reset-header">
+    <div class="header-content">
+      <a href="instituto_cafe_angola.html" class="logo">
+        <div class="logo-emblem">☕</div>
+        <div class="logo-text">
+          <span class="abbr">INCA</span>
+          <span class="full">Instituto Nacional do Café de Angola</span>
+        </div>
+      </a>
+      <a href="login.html" class="back-link">← Voltar ao Login</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="reset-container">
+    <div class="reset-card">
+      <div class="reset-header-card">
+        <div class="reset-icon">🔐</div>
+        <h1 class="reset-title">Reset de Senha</h1>
+        <p class="reset-subtitle">Recupere o acesso à sua conta</p>
+      </div>
+
+      <div class="reset-body">
+        <div id="alertContainer"></div>
+
+        <!-- Request Form -->
+        <div id="requestSection">
+          <form id="resetRequestForm">
+            <div class="form-group">
+              <label class="form-label" for="nbi">Número de Identidade (NBI)</label>
+              <input type="text" class="form-control" id="nbi" required 
+                     placeholder="Ex: DEMO-006-UIG-2026" autocomplete="username">
+              <div class="form-hint">Introduza o seu NBI sem espaços</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <input type="email" class="form-control" id="email" required 
+                     placeholder="seu.email@exemplo.com" autocomplete="email">
+              <div class="form-hint">Email registado na sua conta</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="requestBtn">
+              <span id="requestBtnText">Solicitar Reset</span>
+              <span id="requestBtnLoading" class="loading" style="display: none;"></span>
+            </button>
+          </form>
+
+          <div class="login-link">
+            Lembra-se da senha? <a href="login.html">Voltar ao Login</a>
+          </div>
+
+          <!-- Demo Section -->
+          <div class="demo-section">
+            <h3 class="demo-title">📋 Contas de Demonstração</h3>
+            <div class="demo-accounts">
+              <div class="demo-account" onclick="fillDemoAccount('DEMO-006-UIG-2026', 'tipolaco2024@gmail.com')">
+                <div class="demo-account-name">João António Kafuxi</div>
+                <div class="demo-account-details">Produtor de Café • Uíge</div>
+                <div class="demo-account-pin">Email: tipolaco2024@gmail.com</div>
+              </div>
+              <div class="demo-account" onclick="fillDemoAccount('NBI-002-CAB-2024', '')">
+                <div class="demo-account-name">Maria da Conceição Lopes</div>
+                <div class="demo-account-details">Produtora de Cacau • Cabinda</div>
+                <div class="demo-account-pin">Email: não registado</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Success Section -->
+        <div id="successSection" class="success-section">
+          <div class="success-icon">✅</div>
+          <h2 class="success-title">Instruções Enviadas!</h2>
+          <p class="success-message">
+            Enviamos as instruções para resetar o seu PIN para o email fornecido.<br>
+            Verifique a sua caixa de entrada (e a pasta de spam).
+          </p>
+
+          <div class="demo-instructions">
+            <h4>📋 Modo Demonstração</h4>
+            <p>Para testar rapidamente, pode usar o link abaixo:</p>
+            <ol>
+              <li>Copie o token de reset exibido abaixo</li>
+              <li>Clique no link para aceder à página de confirmação</li>
+              <li>Insira o token e defina o seu novo PIN</li>
+            </ol>
+            <div id="demoInfo" style="margin-top: 1rem;">
+              <!-- Demo info will be inserted here -->
+            </div>
+          </div>
+
+          <button class="btn btn-secondary" onclick="window.location.href='login.html'">
+            Voltar ao Login
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ── GLOBAL STATE ──
+    let isLoading = false;
+
+    // ── INIT ──
+    document.addEventListener('DOMContentLoaded', () => {
+      setupEventListeners();
+    });
+
+    // ── EVENT LISTENERS ──
+    function setupEventListeners() {
+      document.getElementById('resetRequestForm').addEventListener('submit', handleResetRequest);
+      
+      // Auto-format NBI input
+      document.getElementById('nbi').addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase().replace(/\s/g, '');
+      });
+    }
+
+    // ── RESET REQUEST HANDLER ──
+    async function handleResetRequest(e) {
+      e.preventDefault();
+      
+      if (isLoading) return;
+      
+      const nbi = document.getElementById('nbi').value.trim();
+      const email = document.getElementById('email').value.trim();
+
+      if (!nbi || !email) {
+        showAlert('Por favor, preencha todos os campos.', 'warning');
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        showAlert('Por favor, introduza um email válido.', 'warning');
+        return;
+      }
+
+      setLoading(true);
+      clearAlerts();
+
+      try {
+        const response = await fetch('/api/reset-solicitar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ nbi, email })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao solicitar reset');
+        }
+
+        if (data.success) {
+          showSuccess(data);
+        } else {
+          showAlert(data.error || 'Erro ao solicitar reset', 'error');
+        }
+      } catch (error) {
+        console.error('Reset request error:', error);
+        showAlert(error.message || 'Erro de conexão. Tente novamente.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // ── SUCCESS HANDLER ──
+    function showSuccess(data) {
+      const requestSection = document.getElementById('requestSection');
+      const successSection = document.getElementById('successSection');
+      const demoInfo = document.getElementById('demoInfo');
+
+      // Hide request form and show success
+      requestSection.style.display = 'none';
+      successSection.style.display = 'block';
+
+      // Add demo information for testing
+      if (data.demoToken && data.demoLink) {
+        demoInfo.innerHTML = `
+          <div style="background: white; border: 1px solid var(--light-rule); border-radius: 2px; padding: 1rem; margin-top: 1rem;">
+            <div style="font-family: var(--sans); font-size: .8rem; color: var(--mid); margin-bottom: .5rem;">
+              <strong>Token de Reset:</strong>
+            </div>
+            <div style="font-family: monospace; font-size: .9rem; background: var(--cream); padding: .5rem; border-radius: 2px; word-break: break-all; margin-bottom: 1rem;">
+              ${data.demoToken}
+            </div>
+            <a href="${data.demoLink}" class="demo-link" target="_blank">
+              Ir para Página de Confirmação
+            </a>
+          </div>
+        `;
+      }
+    }
+
+    // ── UI HELPERS ──
+    function setLoading(loading) {
+      isLoading = loading;
+      const btn = document.getElementById('requestBtn');
+      const btnText = document.getElementById('requestBtnText');
+      const btnLoading = document.getElementById('requestBtnLoading');
+
+      if (loading) {
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline-block';
+      } else {
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoading.style.display = 'none';
+      }
+    }
+
+    function fillDemoAccount(nbi, email) {
+      document.getElementById('nbi').value = nbi;
+      document.getElementById('email').value = email;
+    }
+
+    function showAlert(message, type = 'info') {
+      clearAlerts();
+      
+      const alertContainer = document.getElementById('alertContainer');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+      
+      alertContainer.appendChild(alert);
+
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        if (alert.parentNode) {
+          alert.remove();
+        }
+      }, 5000);
+    }
+
+    function clearAlerts() {
+      const alertContainer = document.getElementById('alertContainer');
+      alertContainer.innerHTML = '';
+    }
+
+    function isValidEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    }
+
+    // ── KEYBOARD SHORTCUTS ──
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+Enter to submit form
+      if (e.ctrlKey && e.key === 'Enter') {
+        document.getElementById('resetRequestForm').dispatchEvent(new Event('submit'));
+      }
+      
+      // Escape to clear form
+      if (e.key === 'Escape') {
+        document.getElementById('resetRequestForm').reset();
+        clearAlerts();
+      }
+    });
+
+    // ── AUTO-FOCUS ──
+    window.addEventListener('load', () => {
+      document.getElementById('nbi').focus();
+    });
+  </script>
+</body>
+</html>
