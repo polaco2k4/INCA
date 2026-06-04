@@ -963,6 +963,38 @@ app.get('/api/projectos', async (req, res) => {
   }
 });
 
+// GET /api/projectos/fotos?projeto_id=1  (ou ?fileira=Café para compatibilidade)
+app.get('/api/projectos/fotos', async (req, res) => {
+  const { fileira, projeto_id } = req.query;
+  try {
+    const pool = await poolPromise;
+    let result;
+    if (projeto_id) {
+      result = await pool.request()
+        .input('projeto_id', sql.Int, parseInt(projeto_id))
+        .query(`
+          SELECT pf.id, pf.url_path, pf.filename, pf.ordem
+          FROM projecto_fotos pf
+          WHERE pf.projecto_id = @projeto_id
+          ORDER BY pf.ordem, pf.id
+        `);
+    } else {
+      result = await pool.request()
+        .input('fileira', sql.NVarChar, fileira || '')
+        .query(`
+          SELECT pf.id, pf.url_path, pf.filename, pf.ordem
+          FROM projecto_fotos pf
+          INNER JOIN projectos p ON pf.projecto_id = p.id
+          WHERE p.fileira = @fileira
+          ORDER BY pf.ordem, pf.id
+        `);
+    }
+    res.json({ fotos: result.recordset });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/projectos/:id - Obter detalhes de um projecto
 app.get('/api/projectos/:id', async (req, res) => {
   const { id } = req.params;

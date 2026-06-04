@@ -429,19 +429,12 @@
     pointer-events: none;
   }
   #projectos .fileiras-header { position: relative; z-index: 2; }
-  #projectos .fileiras-grid { 
-    position: relative; z-index: 2;
-    background: rgba(0,0,0,.3);
-    border: 2px solid rgba(196,154,60,.25);
-    box-shadow: 0 8px 32px rgba(0,0,0,.4);
-  }
+  #projectos .proj-carousel-wrapper { position: relative; z-index: 2; }
   #projectos .fileira-card {
     background: linear-gradient(145deg, rgba(26,10,0,.8) 0%, rgba(59,26,8,.9) 100%);
-    border-right: 2px solid rgba(196,154,60,.2);
     backdrop-filter: blur(8px);
     transition: all var(--transition);
   }
-  #projectos .fileira-card:last-child { border-right: none; }
   #projectos .fileira-card::before {
     background: linear-gradient(160deg, rgba(196,154,60,.12) 0%, rgba(196,154,60,.05) 60%);
   }
@@ -872,6 +865,65 @@
   .modal-close:hover { color: var(--gold); }
   .modal-body { padding: 1.75rem; }
 
+  /* ── GALERIA DE FOTOS DO PROJECTO ── */
+  .proj-foto-section { margin-top: 2rem; border-top: 1px solid var(--parchment); padding-top: 1.5rem; }
+  .proj-foto-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: .75rem;
+    margin-top: 1rem;
+  }
+  .proj-foto-item {
+    aspect-ratio: 4/3;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid var(--parchment);
+    background: var(--cream);
+  }
+  .proj-foto-item img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform .3s;
+    display: block;
+  }
+  .proj-foto-item:hover img { transform: scale(1.06); }
+
+  /* ── LIGHTBOX ── */
+  #foto-lightbox {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(10,5,0,.93);
+    display: none; align-items: center; justify-content: center;
+  }
+  #foto-lightbox.active { display: flex; }
+  #foto-lightbox img {
+    max-width: 88vw; max-height: 88vh;
+    border-radius: 4px; object-fit: contain;
+    box-shadow: 0 8px 40px rgba(0,0,0,.6);
+  }
+  .lb-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,.12); border: none;
+    color: #fff; font-size: 2rem; padding: .4rem 1rem;
+    cursor: pointer; border-radius: 4px; line-height: 1;
+    transition: background .2s;
+  }
+  .lb-btn:hover { background: rgba(255,255,255,.25); }
+  #lb-prev { left: 1rem; }
+  #lb-next { right: 1rem; }
+  #lb-close {
+    position: absolute; top: 1rem; right: 1rem;
+    background: rgba(255,255,255,.15); border: none;
+    color: #fff; font-size: 1.5rem; padding: .3rem .8rem;
+    cursor: pointer; border-radius: 4px; line-height: 1;
+    transition: background .2s;
+  }
+  #lb-close:hover { background: rgba(255,255,255,.3); }
+  #lb-counter {
+    position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,.6); font-family: var(--sans); font-size: .8rem;
+  }
+
   /* Login */
   .portal-brand { text-align: center; margin-bottom: 1.5rem; }
   .portal-brand .abbr { font-family: var(--serif); font-size: 1.7rem; font-weight: 700; color: var(--roast); letter-spacing: .06em; }
@@ -1015,6 +1067,94 @@
     .lib-grid { grid-template-columns: 1fr; }
     .stats-table { font-size: .73rem; }
     .form-row { grid-template-columns: 1fr; }
+  }
+
+  /* ── PROJECTOS CAROUSEL ── */
+  .proj-carousel-wrapper {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 36px;
+  }
+  .proj-carousel-viewport {
+    overflow: hidden;
+    border: 2px solid rgba(196,154,60,.25);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    background: rgba(0,0,0,.3);
+  }
+  .proj-track {
+    display: flex;
+    transition: transform .55s cubic-bezier(.4,0,.2,1);
+    will-change: transform;
+  }
+  .proj-track .fileira-card {
+    flex-shrink: 0;
+    border-right: 2px solid rgba(196,154,60,.2);
+  }
+  .proj-track .fileira-card:last-child { border-right: none; }
+  .proj-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(26,10,0,.9);
+    border: 1.5px solid rgba(196,154,60,.5);
+    color: var(--gold);
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    backdrop-filter: blur(4px);
+    line-height: 1;
+    padding: 0;
+  }
+  .proj-nav-btn:hover:not(:disabled) {
+    background: var(--gold);
+    color: var(--espresso);
+    border-color: var(--gold);
+    box-shadow: 0 4px 20px rgba(196,154,60,.5);
+    transform: translateY(-50%) scale(1.1);
+  }
+  .proj-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+  .proj-nav-prev { left: -4px; }
+  .proj-nav-next { right: -4px; }
+  .proj-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: .45rem;
+    margin-top: 1.25rem;
+  }
+  .proj-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(196,154,60,.25);
+    border: 1px solid rgba(196,154,60,.4);
+    cursor: pointer;
+    transition: all .35s;
+    padding: 0;
+  }
+  .proj-dot.active {
+    background: var(--gold);
+    width: 22px;
+    border-radius: 4px;
+    border-color: var(--gold);
+  }
+  @media (max-width: 900px) {
+    .proj-carousel-wrapper { padding: 0 28px; }
+    .proj-nav-prev { left: -2px; }
+    .proj-nav-next { right: -2px; }
+  }
+  @media (max-width: 600px) {
+    .proj-carousel-wrapper { padding: 0 20px; }
+    .proj-nav-btn { width: 36px; height: 36px; font-size: 1.2rem; }
   }
 </style>
 </head>
@@ -1299,95 +1439,199 @@
     <p class="section-lead light" data-lang="pt">O INCA coordena projectos estratégicos para modernização e expansão das fileiras agrícolas, com foco em sustentabilidade e inovação tecnológica.</p>
     <p class="section-lead light" data-lang="en">INCA coordinates strategic projects for modernization and expansion of agricultural chains, focusing on sustainability and technological innovation.</p>
   </div>
-  <div class="fileiras-grid reveal" style="transition-delay:.1s">
-    <div class="fileira-card" onclick="openModal('modal-projeto-cafe')">
-      <span class="fileira-icon">🌱</span>
-      <h3 class="fileira-name" data-lang="pt">Reabilitação Cafeeira</h3>
-      <h3 class="fileira-name" data-lang="en">Coffee Rehabilitation</h3>
-      <span class="fileira-latin">Programa Nacional do Café</span>
-      <p class="fileira-desc" data-lang="pt">Recuperação de 50.000 hectares de café nas províncias do Uíge, Kwanza Norte e Malanje, com introdução de variedades resistentes e tecnologia de irrigação.</p>
-      <p class="fileira-desc" data-lang="en">Recovery of 50,000 hectares of coffee in Uíge, Kwanza Norte and Malanje provinces, with introduction of resistant varieties and irrigation technology.</p>
-      <div class="fileira-stat-row">
-        <div class="fileira-stat">
-          <span class="fileira-stat-val">$45M</span>
-          <span class="fileira-stat-key" data-lang="pt">Investimento</span>
-          <span class="fileira-stat-key" data-lang="en">Investment</span>
+  <div class="proj-carousel-wrapper reveal" style="transition-delay:.1s">
+    <button class="proj-nav-btn proj-nav-prev" id="proj-prev" aria-label="Anterior">&#8249;</button>
+    <div class="proj-carousel-viewport">
+      <div class="proj-track" id="proj-track">
+
+        <div class="fileira-card" onclick="openModal('modal-projeto-cafe')">
+          <span class="fileira-icon">🌱</span>
+          <h3 class="fileira-name" data-lang="pt">Reabilitação Cafeeira</h3>
+          <h3 class="fileira-name" data-lang="en">Coffee Rehabilitation</h3>
+          <span class="fileira-latin">Programa Nacional do Café</span>
+          <p class="fileira-desc" data-lang="pt">Recuperação de 50.000 hectares de café nas províncias do Uíge, Kwanza Norte e Malanje, com introdução de variedades resistentes e tecnologia de irrigação.</p>
+          <p class="fileira-desc" data-lang="en">Recovery of 50,000 hectares of coffee in Uíge, Kwanza Norte and Malanje provinces, with introduction of resistant varieties and irrigation technology.</p>
+          <div class="fileira-stat-row">
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">$45M</span>
+              <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+              <span class="fileira-stat-key" data-lang="en">Investment</span>
+            </div>
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">2026</span>
+              <span class="fileira-stat-key" data-lang="pt">Conclusão</span>
+              <span class="fileira-stat-key" data-lang="en">Completion</span>
+            </div>
+          </div>
+          <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-cafe')">Ver detalhes →</a>
+          <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-cafe')">View details →</a>
         </div>
-        <div class="fileira-stat">
-          <span class="fileira-stat-val">2026</span>
-          <span class="fileira-stat-key" data-lang="pt">Conclusão</span>
-          <span class="fileira-stat-key" data-lang="en">Completion</span>
+
+        <div class="fileira-card" onclick="openModal('modal-projeto-dendem')">
+          <span class="fileira-icon">🌴</span>
+          <h3 class="fileira-name" data-lang="pt">Expansão Dendém</h3>
+          <h3 class="fileira-name" data-lang="en">Palm Oil Expansion</h3>
+          <span class="fileira-latin">Cabo Ledo Development</span>
+          <p class="fileira-desc" data-lang="pt">Desenvolvimento de 20.000 hectares de dendezeiros no Cabo Ledo, com fábrica de processamento industrial e capacitação de 2.000 produtores.</p>
+          <p class="fileira-desc" data-lang="en">Development of 20,000 hectares of oil palm in Cabo Ledo, with industrial processing plant and training of 2,000 producers.</p>
+          <div class="fileira-stat-row">
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">$32M</span>
+              <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+              <span class="fileira-stat-key" data-lang="en">Investment</span>
+            </div>
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">15k t</span>
+              <span class="fileira-stat-key" data-lang="pt">Capacidade</span>
+              <span class="fileira-stat-key" data-lang="en">Capacity</span>
+            </div>
+          </div>
+          <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-dendem')">Ver detalhes →</a>
+          <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-dendem')">View details →</a>
         </div>
+
+        <div class="fileira-card" onclick="openModal('modal-projeto-cacau')">
+          <span class="fileira-icon">🍫</span>
+          <h3 class="fileira-name" data-lang="pt">Modernização Cacau</h3>
+          <h3 class="fileira-name" data-lang="en">Cocoa Modernization</h3>
+          <span class="fileira-latin">Cuanza Sul Project</span>
+          <p class="fileira-desc" data-lang="pt">Modernização de 8.000 hectares de cacaueiros no Cuanza Sul com sistemas agroflorestais e certificação orgânica para mercados europeus.</p>
+          <p class="fileira-desc" data-lang="en">Modernization of 8,000 hectares of cocoa in Cuanza Sul with agroforestry systems and organic certification for European markets.</p>
+          <div class="fileira-stat-row">
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">$18M</span>
+              <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+              <span class="fileira-stat-key" data-lang="en">Investment</span>
+            </div>
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">500</span>
+              <span class="fileira-stat-key" data-lang="pt">Produtores</span>
+              <span class="fileira-stat-key" data-lang="en">Producers</span>
+            </div>
+          </div>
+          <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-cacau')">Ver detalhes →</a>
+          <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-cacau')">View details →</a>
+        </div>
+
+        <div class="fileira-card" onclick="openModal('modal-projeto-caju')">
+          <span class="fileira-icon">🥜</span>
+          <h3 class="fileira-name" data-lang="pt">Desenvolvimento Caju</h3>
+          <h3 class="fileira-name" data-lang="en">Cashew Development</h3>
+          <span class="fileira-latin">Benguela Initiative</span>
+          <p class="fileira-desc" data-lang="pt">Expansão de 12.000 hectares de cajueiros em Benguela e Namibe com unidade de processamento industrial e exportação para Ásia.</p>
+          <p class="fileira-desc" data-lang="en">Expansion of 12,000 hectares of cashew in Benguela and Namibe with industrial processing unit and export to Asia.</p>
+          <div class="fileira-stat-row">
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">$12M</span>
+              <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+              <span class="fileira-stat-key" data-lang="en">Investment</span>
+            </div>
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">8k t</span>
+              <span class="fileira-stat-key" data-lang="pt">Produção</span>
+              <span class="fileira-stat-key" data-lang="en">Production</span>
+            </div>
+          </div>
+          <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-caju')">Ver detalhes →</a>
+          <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-caju')">View details →</a>
+        </div>
+
+        <div class="fileira-card" onclick="openModal('modal-projeto-irrigacao')">
+          <span class="fileira-icon">💧</span>
+          <h3 class="fileira-name" data-lang="pt">Irrigação Huambo</h3>
+          <h3 class="fileira-name" data-lang="en">Huambo Irrigation</h3>
+          <span class="fileira-latin">Planalto Central Project</span>
+          <p class="fileira-desc" data-lang="pt">Construção de infraestruturas de irrigação no planalto central para suporte à produção de café premium e culturas de alto valor nas terras altas angolanas.</p>
+          <p class="fileira-desc" data-lang="en">Construction of irrigation infrastructure on the central plateau to support premium coffee production and high-value crops in Angola's highlands.</p>
+          <div class="fileira-stat-row">
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">$28M</span>
+              <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+              <span class="fileira-stat-key" data-lang="en">Investment</span>
+            </div>
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">15k ha</span>
+              <span class="fileira-stat-key" data-lang="pt">Área Irrigada</span>
+              <span class="fileira-stat-key" data-lang="en">Irrigated Area</span>
+            </div>
+          </div>
+          <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-irrigacao')">Ver detalhes →</a>
+          <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-irrigacao')">View details →</a>
+        </div>
+
+        <div class="fileira-card" onclick="openModal('modal-projeto-viveiros')">
+          <span class="fileira-icon">🌿</span>
+          <h3 class="fileira-name" data-lang="pt">Viveiros Nacionais</h3>
+          <h3 class="fileira-name" data-lang="en">National Nurseries</h3>
+          <span class="fileira-latin">Seedling Programme</span>
+          <p class="fileira-desc" data-lang="pt">Programa nacional de produção e distribuição de 50 milhões de mudas certificadas das quatro fileiras estratégicas para renovação do parque agrícola.</p>
+          <p class="fileira-desc" data-lang="en">National programme to produce and distribute 50 million certified seedlings of the four strategic crops to renew Angola's agricultural stock.</p>
+          <div class="fileira-stat-row">
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">$9M</span>
+              <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+              <span class="fileira-stat-key" data-lang="en">Investment</span>
+            </div>
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">50M</span>
+              <span class="fileira-stat-key" data-lang="pt">Mudas/Ano</span>
+              <span class="fileira-stat-key" data-lang="en">Seedlings/Year</span>
+            </div>
+          </div>
+          <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-viveiros')">Ver detalhes →</a>
+          <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-viveiros')">View details →</a>
+        </div>
+
+        <div class="fileira-card" onclick="openModal('modal-projeto-digital')">
+          <span class="fileira-icon">📱</span>
+          <h3 class="fileira-name" data-lang="pt">Digitalização Agrícola</h3>
+          <h3 class="fileira-name" data-lang="en">Agricultural Digitization</h3>
+          <span class="fileira-latin">AgriTech Angola</span>
+          <p class="fileira-desc" data-lang="pt">Implementação de plataforma digital de rastreabilidade, certificação de origem e gestão de produtores para acesso privilegiado a mercados internacionais premium.</p>
+          <p class="fileira-desc" data-lang="en">Implementation of digital traceability, origin certification and producer management platform for privileged access to premium international markets.</p>
+          <div class="fileira-stat-row">
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">$6M</span>
+              <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+              <span class="fileira-stat-key" data-lang="en">Investment</span>
+            </div>
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">120k</span>
+              <span class="fileira-stat-key" data-lang="pt">Produtores</span>
+              <span class="fileira-stat-key" data-lang="en">Producers</span>
+            </div>
+          </div>
+          <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-digital')">Ver detalhes →</a>
+          <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-digital')">View details →</a>
+        </div>
+
+        <div class="fileira-card" onclick="openModal('modal-projeto-formacao')">
+          <span class="fileira-icon">🎓</span>
+          <h3 class="fileira-name" data-lang="pt">Formação Técnica</h3>
+          <h3 class="fileira-name" data-lang="en">Technical Training</h3>
+          <span class="fileira-latin">Capacitação Nacional</span>
+          <p class="fileira-desc" data-lang="pt">Programa de capacitação de 10.000 técnicos agrícolas em parceria com institutos internacionais, com foco em práticas sustentáveis e boas práticas agrícolas.</p>
+          <p class="fileira-desc" data-lang="en">Training programme for 10,000 agricultural technicians in partnership with international institutes, focusing on sustainable practices and good agricultural practices.</p>
+          <div class="fileira-stat-row">
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">$5M</span>
+              <span class="fileira-stat-key" data-lang="pt">Investimento</span>
+              <span class="fileira-stat-key" data-lang="en">Investment</span>
+            </div>
+            <div class="fileira-stat">
+              <span class="fileira-stat-val">10k</span>
+              <span class="fileira-stat-key" data-lang="pt">Técnicos</span>
+              <span class="fileira-stat-key" data-lang="en">Technicians</span>
+            </div>
+          </div>
+          <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-formacao')">Ver detalhes →</a>
+          <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-formacao')">View details →</a>
+        </div>
+
       </div>
-      <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-cafe')">Ver detalhes →</a>
-      <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-cafe')">View details →</a>
     </div>
-    <div class="fileira-card" onclick="openModal('modal-projeto-dendem')">
-      <span class="fileira-icon">🌴</span>
-      <h3 class="fileira-name" data-lang="pt">Expansão Dendém</h3>
-      <h3 class="fileira-name" data-lang="en">Palm Oil Expansion</h3>
-      <span class="fileira-latin">Cabo Ledo Development</span>
-      <p class="fileira-desc" data-lang="pt">Desenvolvimento de 20.000 hectares de dendezeiros no Cabo Ledo, com fábrica de processamento industrial e capacitação de 2.000 produtores.</p>
-      <p class="fileira-desc" data-lang="en">Development of 20,000 hectares of oil palm in Cabo Ledo, with industrial processing plant and training of 2,000 producers.</p>
-      <div class="fileira-stat-row">
-        <div class="fileira-stat">
-          <span class="fileira-stat-val">$32M</span>
-          <span class="fileira-stat-key" data-lang="pt">Investimento</span>
-          <span class="fileira-stat-key" data-lang="en">Investment</span>
-        </div>
-        <div class="fileira-stat">
-          <span class="fileira-stat-val">15k t</span>
-          <span class="fileira-stat-key" data-lang="pt">Capacidade</span>
-          <span class="fileira-stat-key" data-lang="en">Capacity</span>
-        </div>
-      </div>
-      <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-dendem')">Ver detalhes →</a>
-      <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-dendem')">View details →</a>
-    </div>
-    <div class="fileira-card" onclick="openModal('modal-projeto-cacau')">
-      <span class="fileira-icon">🍫</span>
-      <h3 class="fileira-name" data-lang="pt">Modernização Cacau</h3>
-      <h3 class="fileira-name" data-lang="en">Cocoa Modernization</h3>
-      <span class="fileira-latin">Cuanza Sul Project</span>
-      <p class="fileira-desc" data-lang="pt">Modernização de 8.000 hectares de cacaueiros no Cuanza Sul com sistemas agroflorestais e certificação orgânica para mercados europeus.</p>
-      <p class="fileira-desc" data-lang="en">Modernization of 8,000 hectares of cocoa in Cuanza Sul with agroforestry systems and organic certification for European markets.</p>
-      <div class="fileira-stat-row">
-        <div class="fileira-stat">
-          <span class="fileira-stat-val">$18M</span>
-          <span class="fileira-stat-key" data-lang="pt">Investimento</span>
-          <span class="fileira-stat-key" data-lang="en">Investment</span>
-        </div>
-        <div class="fileira-stat">
-          <span class="fileira-stat-val">500</span>
-          <span class="fileira-stat-key" data-lang="pt">Produtores</span>
-          <span class="fileira-stat-key" data-lang="en">Producers</span>
-        </div>
-      </div>
-      <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-cacau')">Ver detalhes →</a>
-      <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-cacau')">View details →</a>
-    </div>
-    <div class="fileira-card" onclick="openModal('modal-projeto-caju')">
-      <span class="fileira-icon">🥜</span>
-      <h3 class="fileira-name" data-lang="pt">Desenvolvimento Caju</h3>
-      <h3 class="fileira-name" data-lang="en">Cashew Development</h3>
-      <span class="fileira-latin">Benguela Initiative</span>
-      <p class="fileira-desc" data-lang="pt">Expansão de 12.000 hectares de cajueiros em Benguela e Namibe com unidade de processamento industrial e exportação para Ásia.</p>
-      <p class="fileira-desc" data-lang="en">Expansion of 12,000 hectares of cashew in Benguela and Namibe with industrial processing unit and export to Asia.</p>
-      <div class="fileira-stat-row">
-        <div class="fileira-stat">
-          <span class="fileira-stat-val">$12M</span>
-          <span class="fileira-stat-key" data-lang="pt">Investimento</span>
-          <span class="fileira-stat-key" data-lang="en">Investment</span>
-        </div>
-        <div class="fileira-stat">
-          <span class="fileira-stat-val">8k t</span>
-          <span class="fileira-stat-key" data-lang="pt">Produção</span>
-          <span class="fileira-stat-key" data-lang="en">Production</span>
-        </div>
-      </div>
-      <a href="#" class="fileira-more" data-lang="pt" onclick="event.preventDefault(); openModal('modal-projeto-caju')">Ver detalhes →</a>
-      <a href="#" class="fileira-more" data-lang="en" onclick="event.preventDefault(); openModal('modal-projeto-caju')">View details →</a>
-    </div>
+    <button class="proj-nav-btn proj-nav-next" id="proj-next" aria-label="Próximo">&#8250;</button>
+    <div class="proj-dots" id="proj-dots"></div>
   </div>
 </section>
 
@@ -2186,16 +2430,24 @@
 
 <script>
 // ── Funções Globais ──
+// Mapa modal → ID do projecto na base de dados
+const _PROJETO_ID_MAP = {
+  'modal-projeto-cafe':       1,
+  'modal-projeto-dendem':     2,
+  'modal-projeto-cacau':      3,
+  'modal-projeto-caju':       4,
+  'modal-projeto-irrigacao':  6,
+  'modal-projeto-viveiros':   7,
+  'modal-projeto-digital':    8,
+  'modal-projeto-formacao':   9
+};
+
 function openModal(id) {
-  console.log('openModal called with id:', id);
   const modal = document.getElementById(id);
-  console.log('modal element:', modal);
   if (modal) {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    console.log('Modal opened successfully');
-  } else {
-    console.error('Modal not found with id:', id);
+    if (_PROJETO_ID_MAP[id]) loadProjectPhotos(id, _PROJETO_ID_MAP[id]);
   }
 }
 
@@ -2204,8 +2456,83 @@ function closeModal(id) {
   if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
 }
 
+// ── Galeria de Fotos ──
+window._lbData = {};
+
+async function loadProjectPhotos(modalId, projetoId) {
+  const gallery = document.getElementById('gallery-' + modalId);
+  if (!gallery) return;
+
+  // Limpar sempre antes de carregar — evita mostrar fotos de outro projecto
+  gallery.innerHTML = '';
+  gallery.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/projectos/fotos?projeto_id=' + projetoId + '&_=' + Date.now());
+    if (!res.ok) return;
+    const data = await res.json();
+    const fotos = data.fotos || [];
+    if (!fotos.length) return;
+
+    window._lbData[modalId] = fotos;
+
+    gallery.innerHTML =
+      '<h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:0;" data-lang="pt">Galeria de Fotos</h4>' +
+      '<h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:0;" data-lang="en">Photo Gallery</h4>' +
+      '<div class="proj-foto-grid">' +
+      fotos.map(function(f, i) {
+        return '<div class="proj-foto-item" onclick="openLightbox(\'' + modalId + '\',' + i + ')">' +
+               '<img src="' + f.url_path + '" alt="" loading="lazy"></div>';
+      }).join('') +
+      '</div>';
+
+    gallery.style.display = '';
+  } catch (err) {
+    console.error('[INCA] loadProjectPhotos erro:', err);
+  }
+}
+
+// ── Lightbox ──
+let _lbModal = null, _lbIdx = 0;
+
+function openLightbox(modalId, idx) {
+  const fotos = window._lbData[modalId];
+  if (!fotos || !fotos.length) return;
+  _lbModal = modalId;
+  _lbIdx = idx;
+  renderLightbox();
+  document.getElementById('foto-lightbox').classList.add('active');
+  document.addEventListener('keydown', _lbKeyHandler);
+}
+
+function renderLightbox() {
+  const fotos = window._lbData[_lbModal];
+  document.getElementById('lb-img').src = fotos[_lbIdx].url_path;
+  document.getElementById('lb-counter').textContent = (_lbIdx + 1) + ' / ' + fotos.length;
+  document.getElementById('lb-prev').style.display = fotos.length > 1 ? '' : 'none';
+  document.getElementById('lb-next').style.display = fotos.length > 1 ? '' : 'none';
+}
+
+function shiftLightbox(dir) {
+  const fotos = window._lbData[_lbModal];
+  _lbIdx = (_lbIdx + dir + fotos.length) % fotos.length;
+  renderLightbox();
+}
+
+function closeLightbox() {
+  document.getElementById('foto-lightbox').classList.remove('active');
+  document.removeEventListener('keydown', _lbKeyHandler);
+}
+
+function _lbKeyHandler(e) {
+  if (e.key === 'ArrowLeft')  shiftLightbox(-1);
+  if (e.key === 'ArrowRight') shiftLightbox(1);
+  if (e.key === 'Escape')     closeLightbox();
+}
+
 // ── GLOBAL LANG SWITCH FUNCTION ──
 function setLang(lang) {
+  window._currentLang = lang;
   document.body.classList.toggle('lang-en', lang === 'en');
   document.querySelectorAll('.lang-toggle button').forEach((btn, i) => {
     btn.classList.toggle('active', (i === 0 && lang === 'pt') || (i === 1 && lang === 'en'));
@@ -2759,6 +3086,92 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<script>
+// ── PROJECTOS CAROUSEL ──
+(function () {
+  var track     = document.getElementById('proj-track');
+  var prevBtn   = document.getElementById('proj-prev');
+  var nextBtn   = document.getElementById('proj-next');
+  var dotsEl    = document.getElementById('proj-dots');
+  var viewport  = track && track.parentElement;
+
+  if (!track) return;
+
+  var cards    = Array.from(track.querySelectorAll('.fileira-card'));
+  var total    = cards.length;
+  var current  = 0;
+  var perView  = 4;
+
+  function calcPerView() {
+    var w = window.innerWidth;
+    if (w < 600)  return 1;
+    if (w < 900)  return 2;
+    return 4;
+  }
+
+  function pages() {
+    return Math.ceil(total / perView);
+  }
+
+  function resize() {
+    var vw = viewport.offsetWidth;
+    var cw = vw / perView;
+    cards.forEach(function (c) { c.style.width = cw + 'px'; });
+  }
+
+  function buildDots() {
+    dotsEl.innerHTML = '';
+    var n = pages();
+    for (var i = 0; i < n; i++) {
+      var d = document.createElement('button');
+      d.className  = 'proj-dot' + (i === current ? ' active' : '');
+      d.setAttribute('aria-label', 'Página ' + (i + 1));
+      d.dataset.page = i;
+      d.addEventListener('click', function () { goTo(+this.dataset.page); });
+      dotsEl.appendChild(d);
+    }
+  }
+
+  function goTo(page) {
+    current = Math.max(0, Math.min(page, pages() - 1));
+    var shift = current * viewport.offsetWidth;
+    track.style.transform = 'translateX(-' + shift + 'px)';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current >= pages() - 1;
+    var dots = dotsEl.querySelectorAll('.proj-dot');
+    dots.forEach(function (d, i) { d.classList.toggle('active', i === current); });
+  }
+
+  prevBtn.addEventListener('click', function () { goTo(current - 1); });
+  nextBtn.addEventListener('click', function () { goTo(current + 1); });
+
+  function init() {
+    perView = calcPerView();
+    resize();
+    buildDots();
+    goTo(0);
+  }
+
+  window.addEventListener('resize', function () {
+    var np = calcPerView();
+    if (np !== perView) { perView = np; current = 0; }
+    resize();
+    buildDots();
+    goTo(current);
+  });
+
+  // Touch/swipe support
+  var startX = 0;
+  viewport.addEventListener('touchstart', function (e) { startX = e.touches[0].clientX; }, { passive: true });
+  viewport.addEventListener('touchend', function (e) {
+    var dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+  });
+
+  init();
+})();
+</script>
+
 <!-- ══════════ PROJECTOS MODALS ══════════ -->
 
 <!-- PROJECTO CAFÉ -->
@@ -2834,6 +3247,12 @@ document.addEventListener('DOMContentLoaded', function() {
         <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Processamento pós-colheita moderno</span><span data-lang="en">Modern post-harvest processing</span></li>
         <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Certificação orgânica</span><span data-lang="en">Organic certification</span></li>
       </ul>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:2px;">
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="pt">Coordenador do Projecto</div>
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="en">Project Coordinator</div>
+        <div style="font-family:var(--body);font-size:.92rem;color:var(--slate);">Dr. António Silva — a.silva@inca.gov.ao — +244 923 456 789</div>
+      </div>
+      <div id="gallery-modal-projeto-cafe" class="proj-foto-section" style="display:none;"></div>
     </div>
   </div>
 </div>
@@ -2911,6 +3330,12 @@ document.addEventListener('DOMContentLoaded', function() {
         <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Centro de capacitação de produtores</span><span data-lang="en">Producer training center</span></li>
         <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Infraestrutura de logística</span><span data-lang="en">Logistics infrastructure</span></li>
       </ul>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:2px;">
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="pt">Coordenadora do Projecto</div>
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="en">Project Coordinator</div>
+        <div style="font-family:var(--body);font-size:.92rem;color:var(--slate);">Eng. Maria Ferreira — m.ferreira@inca.gov.ao — +244 912 345 678</div>
+      </div>
+      <div id="gallery-modal-projeto-dendem" class="proj-foto-section" style="display:none;"></div>
     </div>
   </div>
 </div>
@@ -2988,6 +3413,12 @@ document.addEventListener('DOMContentLoaded', function() {
         <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Rastreabilidade completa</span><span data-lang="en">Full traceability</span></li>
         <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Mercados premium europeus</span><span data-lang="en">Premium European markets</span></li>
       </ul>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:2px;">
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="pt">Coordenador do Projecto</div>
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="en">Project Coordinator</div>
+        <div style="font-family:var(--body);font-size:.92rem;color:var(--slate);">Dr. João Santos — j.santos@inca.gov.ao — +244 923 789 012</div>
+      </div>
+      <div id="gallery-modal-projeto-cacau" class="proj-foto-section" style="display:none;"></div>
     </div>
   </div>
 </div>
@@ -3070,8 +3501,401 @@ document.addEventListener('DOMContentLoaded', function() {
         <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Armazenamento refrigerado</span><span data-lang="en">Cold storage</span></li>
         <li style="margin-bottom:0.5rem;">✓ <span data-lang="pt">Logística de exportação</span><span data-lang="en">Export logistics</span></li>
       </ul>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:2px;">
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="pt">Coordenadora do Projecto</div>
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="en">Project Coordinator</div>
+        <div style="font-family:var(--body);font-size:.92rem;color:var(--slate);">Eng. Isabel Costa — i.costa@inca.gov.ao — +244 934 567 890</div>
+      </div>
+      <div id="gallery-modal-projeto-caju" class="proj-foto-section" style="display:none;"></div>
     </div>
   </div>
+</div>
+
+<!-- PROJECTO IRRIGAÇÃO HUAMBO -->
+<div class="modal-overlay" id="modal-projeto-irrigacao">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">💧</div>
+        <div>
+          <h3 class="modal-title" data-lang="pt">Irrigação Huambo</h3>
+          <h3 class="modal-title" data-lang="en">Huambo Irrigation</h3>
+          <p class="modal-subtitle">Planalto Central Project</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="event.preventDefault(); closeModal('modal-projeto-irrigacao')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Visão Geral</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Overview</h4>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="pt">Construção de infraestruturas de irrigação no planalto central do Huambo para suporte à produção de café premium e culturas de alto valor. O projecto inclui barragens de captação, canais de distribuição e sistemas de irrigação por gotejamento em 15.000 hectares de terras altas angolanas.</p>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="en">Construction of irrigation infrastructure on the central plateau of Huambo to support premium coffee production and high-value crops. The project includes catchment dams, distribution channels and drip irrigation systems across 15,000 hectares of Angolan highlands.</p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Estatísticas Chave</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Key Statistics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">15.000</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Hectares irrigados</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Irrigated hectares</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">$28M</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Investimento</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Investment</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">1.800</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Agricultores beneficiados</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Farmers benefited</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">2028</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Conclusão</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Completion</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Fases do Projecto</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Project Phases</h4>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="pt">Estudo Hidrológico</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="en">Hydrological Study</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--gold);font-weight:700;margin-top:.3rem;">20% ✔</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">2025</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="pt">Construção de Barragens</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="en">Dam Construction</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);font-weight:700;margin-top:.3rem;" data-lang="pt">Por iniciar</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);font-weight:700;margin-top:.3rem;" data-lang="en">Not started</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">2025–2027</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="pt">Rede de Distribuição</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="en">Distribution Grid</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);font-weight:700;margin-top:.3rem;" data-lang="pt">Por iniciar</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);font-weight:700;margin-top:.3rem;" data-lang="en">Not started</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">2027–2028</div>
+        </div>
+      </div>
+
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Tecnologias Implementadas</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Technologies</h4>
+      <ul style="font-family:var(--sans);color:var(--mid);line-height:1.8;list-style:none;padding:0;">
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Barragens de captação de água</span><span data-lang="en">Water catchment dams</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Canais de distribuição</span><span data-lang="en">Distribution channels</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Irrigação por gotejamento</span><span data-lang="en">Drip irrigation</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Sensores de humidade do solo</span><span data-lang="en">Soil moisture sensors</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Gestão digital de água</span><span data-lang="en">Digital water management</span></li>
+      </ul>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:2px;">
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="pt">Coordenador do Projecto</div>
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="en">Project Coordinator</div>
+        <div style="font-family:var(--body);font-size:.92rem;color:var(--slate);">Eng. Pedro Lemos — p.lemos@inca.gov.ao — +244 923 111 222</div>
+      </div>
+      <div id="gallery-modal-projeto-irrigacao" class="proj-foto-section" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTO VIVEIROS NACIONAIS -->
+<div class="modal-overlay" id="modal-projeto-viveiros">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🌿</div>
+        <div>
+          <h3 class="modal-title" data-lang="pt">Viveiros Nacionais</h3>
+          <h3 class="modal-title" data-lang="en">National Nurseries</h3>
+          <p class="modal-subtitle">Seedling Programme</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="event.preventDefault(); closeModal('modal-projeto-viveiros')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Visão Geral</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Overview</h4>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="pt">Programa nacional de produção e distribuição de 50 milhões de mudas certificadas por ano das quatro fileiras estratégicas — Café, Dendém, Cacau e Caju — para renovação e expansão do parque agrícola angolano. Rede de 12 viveiros regionais com laboratórios de fitossanidade.</p>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="en">National programme to produce and distribute 50 million certified seedlings per year of the four strategic crops — Coffee, Oil Palm, Cocoa and Cashew — to renew and expand Angola's agricultural stock. Network of 12 regional nurseries with phytosanitary laboratories.</p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Estatísticas Chave</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Key Statistics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">50M</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Mudas/ano</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Seedlings/year</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">$9M</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Investimento</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Investment</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">12</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Viveiros regionais</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Regional nurseries</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">4</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Fileiras abrangidas</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Crops covered</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Províncias Abrangidas</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Covered Provinces</h4>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:2rem;">
+        <div style="background:var(--parchment);padding:.75rem 1rem;border-radius:2px;text-align:center;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Uíge</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">Café</div>
+        </div>
+        <div style="background:var(--parchment);padding:.75rem 1rem;border-radius:2px;text-align:center;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Kwanza Norte</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">Café</div>
+        </div>
+        <div style="background:var(--parchment);padding:.75rem 1rem;border-radius:2px;text-align:center;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Malanje</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">Café</div>
+        </div>
+        <div style="background:var(--parchment);padding:.75rem 1rem;border-radius:2px;text-align:center;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Benguela</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">Caju</div>
+        </div>
+        <div style="background:var(--parchment);padding:.75rem 1rem;border-radius:2px;text-align:center;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Huambo</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">Café / Caju</div>
+        </div>
+        <div style="background:var(--parchment);padding:.75rem 1rem;border-radius:2px;text-align:center;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">Cuanza Sul</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">Cacau</div>
+        </div>
+      </div>
+
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Tecnologias</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Technologies</h4>
+      <ul style="font-family:var(--sans);color:var(--mid);line-height:1.8;list-style:none;padding:0;">
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Biotecnologia vegetal e propagação vegetativa</span><span data-lang="en">Plant biotechnology and vegetative propagation</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Laboratórios de fitossanidade certificados</span><span data-lang="en">Certified phytosanitary laboratories</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Certificação de material vegetal</span><span data-lang="en">Plant material certification</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Rede de frio para conservação de sementes</span><span data-lang="en">Cold chain for seed conservation</span></li>
+      </ul>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:2px;">
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="pt">Coordenadora do Projecto</div>
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="en">Project Coordinator</div>
+        <div style="font-family:var(--body);font-size:.92rem;color:var(--slate);">Dra. Fernanda Lopes — f.lopes@inca.gov.ao — +244 912 333 444</div>
+      </div>
+      <div id="gallery-modal-projeto-viveiros" class="proj-foto-section" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTO DIGITALIZAÇÃO AGRÍCOLA -->
+<div class="modal-overlay" id="modal-projeto-digital">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">📱</div>
+        <div>
+          <h3 class="modal-title" data-lang="pt">Digitalização Agrícola</h3>
+          <h3 class="modal-title" data-lang="en">Agricultural Digitization</h3>
+          <p class="modal-subtitle">AgriTech Angola</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="event.preventDefault(); closeModal('modal-projeto-digital')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Visão Geral</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Overview</h4>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="pt">Implementação de plataforma digital integrada de rastreabilidade, certificação de origem e gestão de 120.000 produtores das quatro fileiras estratégicas. A plataforma garante acesso privilegiado a mercados premium e transparência total na cadeia de valor, com tecnologia blockchain.</p>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="en">Implementation of an integrated digital platform for traceability, origin certification and management of 120,000 producers across four strategic crops. The platform ensures privileged access to premium markets and full value chain transparency using blockchain technology.</p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Estatísticas Chave</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Key Statistics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">120k</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Produtores</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Producers</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">$6M</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Investimento</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Investment</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">18</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Províncias</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Provinces</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">2026</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Conclusão</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Completion</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Fases de Implementação</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Implementation Phases</h4>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="pt">Desenvolvimento</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="en">Development</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--gold);font-weight:700;margin-top:.3rem;">80% ✔</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">2024</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="pt">Piloto 3 Províncias</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="en">3-Province Pilot</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--gold);font-weight:700;margin-top:.3rem;">30% ▶</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">2024–2025</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="pt">Expansão Nacional</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="en">National Rollout</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);font-weight:700;margin-top:.3rem;" data-lang="pt">Por iniciar</div>
+          <div style="font-family:var(--sans);font-size:.8rem;color:var(--mid);font-weight:700;margin-top:.3rem;" data-lang="en">Not started</div>
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--mid);">2025–2026</div>
+        </div>
+      </div>
+
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Funcionalidades da Plataforma</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Platform Features</h4>
+      <ul style="font-family:var(--sans);color:var(--mid);line-height:1.8;list-style:none;padding:0;">
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Blockchain de rastreabilidade end-to-end</span><span data-lang="en">End-to-end traceability blockchain</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">App móvel para produtores (Android / iOS)</span><span data-lang="en">Mobile app for producers (Android / iOS)</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">QR Code de certificação de origem</span><span data-lang="en">Origin certification QR Code</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Dashboard de exportação em tempo real</span><span data-lang="en">Real-time export dashboard</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Integração com API das alfândegas angolanas</span><span data-lang="en">Integration with Angolan customs API</span></li>
+      </ul>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:2px;">
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="pt">Coordenador do Projecto</div>
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="en">Project Coordinator</div>
+        <div style="font-family:var(--body);font-size:.92rem;color:var(--slate);">Dr. Carlos Mendes — c.mendes@inca.gov.ao — +244 934 555 666</div>
+      </div>
+      <div id="gallery-modal-projeto-digital" class="proj-foto-section" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTO FORMAÇÃO TÉCNICA -->
+<div class="modal-overlay" id="modal-projeto-formacao">
+  <div class="modal-box modal-wide">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">🎓</div>
+        <div>
+          <h3 class="modal-title" data-lang="pt">Formação Técnica</h3>
+          <h3 class="modal-title" data-lang="en">Technical Training</h3>
+          <p class="modal-subtitle">Capacitação Nacional</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="event.preventDefault(); closeModal('modal-projeto-formacao')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Visão Geral</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Overview</h4>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="pt">Programa de capacitação de 10.000 técnicos agrícolas especializados nas quatro fileiras estratégicas, em parceria com institutos internacionais de referência. Inclui formação presencial, e-learning e intercâmbios internacionais com foco em boas práticas agrícolas e sustentabilidade.</p>
+          <p style="font-family:var(--sans);color:var(--mid);line-height:1.7;" data-lang="en">Training programme for 10,000 agricultural technicians specialised in the four strategic crops, in partnership with leading international institutes. Includes in-person training, e-learning and international exchanges focusing on good agricultural practices and sustainability.</p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Estatísticas Chave</h4>
+          <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Key Statistics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">10.000</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Técnicos formados</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Trained technicians</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">$5M</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Investimento</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Investment</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">18</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Províncias</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Provinces</div>
+            </div>
+            <div style="background:var(--cream);padding:1rem;border-radius:2px;">
+              <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--gold);">2028</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="pt">Conclusão</div>
+              <div style="font-family:var(--sans);font-size:.7rem;color:var(--mid);" data-lang="en">Completion</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Modalidades de Formação</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Training Modalities</h4>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-size:1.5rem;margin-bottom:.4rem;">🏫</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="pt">Presencial</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="en">In-person</div>
+          <div style="font-family:var(--sans);font-size:.78rem;color:var(--mid);margin-top:.3rem;" data-lang="pt">Centros regionais</div>
+          <div style="font-family:var(--sans);font-size:.78rem;color:var(--mid);margin-top:.3rem;" data-lang="en">Regional centers</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-size:1.5rem;margin-bottom:.4rem;">💻</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);">E-Learning</div>
+          <div style="font-family:var(--sans);font-size:.78rem;color:var(--mid);margin-top:.3rem;" data-lang="pt">Plataforma digital</div>
+          <div style="font-family:var(--sans);font-size:.78rem;color:var(--mid);margin-top:.3rem;" data-lang="en">Digital platform</div>
+        </div>
+        <div style="background:var(--parchment);padding:1rem;text-align:center;border-radius:2px;">
+          <div style="font-size:1.5rem;margin-bottom:.4rem;">✈️</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="pt">Intercâmbios</div>
+          <div style="font-family:var(--serif);font-weight:600;color:var(--roast);" data-lang="en">Exchanges</div>
+          <div style="font-family:var(--sans);font-size:.78rem;color:var(--mid);margin-top:.3rem;" data-lang="pt">Brasil e Portugal</div>
+          <div style="font-family:var(--sans);font-size:.78rem;color:var(--mid);margin-top:.3rem;" data-lang="en">Brazil and Portugal</div>
+        </div>
+      </div>
+
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="pt">Áreas de Formação</h4>
+      <h4 style="font-family:var(--serif);color:var(--espresso);margin-bottom:1rem;" data-lang="en">Training Areas</h4>
+      <ul style="font-family:var(--sans);color:var(--mid);line-height:1.8;list-style:none;padding:0;">
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Boas práticas agrícolas (BPA) nas 4 fileiras</span><span data-lang="en">Good agricultural practices (GAP) in 4 crops</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Gestão de pragas e doenças</span><span data-lang="en">Pest and disease management</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Agricultura sustentável e conservação do solo</span><span data-lang="en">Sustainable agriculture and soil conservation</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Certificação orgânica e rastreabilidade</span><span data-lang="en">Organic certification and traceability</span></li>
+        <li style="margin-bottom:.5rem;">✓ <span data-lang="pt">Utilização de tecnologias digitais agrícolas</span><span data-lang="en">Use of agricultural digital technologies</span></li>
+      </ul>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:2px;">
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="pt">Coordenadora do Projecto</div>
+        <div style="font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;" data-lang="en">Project Coordinator</div>
+        <div style="font-family:var(--body);font-size:.92rem;color:var(--slate);">Prof. Ana Gonçalves — a.goncalves@inca.gov.ao — +244 923 777 888</div>
+      </div>
+      <div id="gallery-modal-projeto-formacao" class="proj-foto-section" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="foto-lightbox" onclick="closeLightbox()">
+  <button class="lb-btn" id="lb-prev" onclick="event.stopPropagation();shiftLightbox(-1)">&#8249;</button>
+  <img id="lb-img" src="" alt="">
+  <button class="lb-btn" id="lb-next" onclick="event.stopPropagation();shiftLightbox(1)">&#8250;</button>
+  <button id="lb-close" onclick="closeLightbox()">&#x2715;</button>
+  <span id="lb-counter"></span>
 </div>
 
 </body>
