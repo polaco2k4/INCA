@@ -1,22 +1,18 @@
 require('dotenv').config();
-const express      = require('express');
-const cors         = require('cors');
-const bcrypt       = require('bcryptjs');
-const path         = require('path');
-const { sql, poolPromise } = require('./db');
-const adminRoutes  = require('./admin-routes');
+const express     = require('express');
+const cors        = require('cors');
+const path        = require('path');
+const supabase    = require('./supabase');
+const adminRoutes = require('./admin-routes');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Middleware ───────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
-
-// ── Rotas Administrativas ────────────────────────────────────
 app.use('/api/admin', adminRoutes);
 
-// ── Helper ───────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────
 function refCode(prefix) {
   return `${prefix}-${new Date().getFullYear()}-${Math.floor(Math.random() * 90000 + 10000)}`;
 }
@@ -24,14 +20,12 @@ function refCode(prefix) {
 function generateResetToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let token = '';
-  for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
+  for (let i = 0; i < 32; i++) token += chars.charAt(Math.floor(Math.random() * chars.length));
   return token;
 }
 
 // ════════════════════════════════════════════════════════════
-//  AUTH
+//  AUTH — PRODUTORES
 // ════════════════════════════════════════════════════════════
 
 // POST /api/login
@@ -39,34 +33,41 @@ app.post('/api/login', async (req, res) => {
   const { nbi, pin } = req.body;
   if (!nbi || !pin) return res.status(400).json({ error: 'NBI e PIN são obrigatórios.' });
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('nbi', sql.NVarChar, nbi.trim().toUpperCase())
-      .query('SELECT id, nome, nbi, pin_hash, provincia, fileira FROM produtores WHERE nbi = @nbi AND activo = 1');
+    const nbiUpper = nbi.trim().toUpperCase();
+    const syntheticEmail = `${nbi.trim().toLowerCase()}@inca.ao`;
 
-    if (result.recordset.length === 0)
-      return res.status(401).json({ error: 'NBI não encontrado ou conta inactiva.' });
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: syntheticEmail,
+      password: pin
+    });
 
-    const produtor = result.recordset[0];
-    const ok = await bcrypt.compare(pin, produtor.pin_hash);
-    if (!ok) return res.status(401).json({ error: 'PIN incorrecto.' });
+    if (authError) {
+      const { data: prod } = await supabase.from('produtores').select('activo').eq('nbi', nbiUpper).single();
+      if (prod && !prod.activo) return res.status(401).json({ error: 'Conta inactiva. Aguarda aprovação pelo INCA.' });
+      return res.status(401).json({ error: 'NBI não encontrado ou PIN incorrecto.' });
+    }
 
-    const stats = await pool.request()
-      .input('pid', sql.Int, produtor.id)
-      .query(`
-        SELECT
-          (SELECT COUNT(*) FROM parcelas      WHERE produtor_id = @pid) AS parcelas,
-          (SELECT COUNT(*) FROM lotes         WHERE produtor_id = @pid) AS lotes,
-          (SELECT COUNT(*) FROM certificados  WHERE produtor_id = @pid AND estado = 'pendente') AS certPend,
-          (SELECT COUNT(*) FROM pedidos_apoio WHERE produtor_id = @pid AND estado = 'em_analise') AS pedAnali
-      `);
+    const { data: produtor, error: dbErr } = await supabase
+      .from('produtores')
+      .select('id, nome, nbi, provincia, fileira, activo')
+      .eq('nbi', nbiUpper)
+      .single();
 
-    const s = stats.recordset[0];
+    if (dbErr || !produtor) return res.status(401).json({ error: 'Produtor não encontrado.' });
+    if (!produtor.activo) return res.status(401).json({ error: 'Conta inactiva. Aguarda aprovação pelo INCA.' });
+
+    const pid = produtor.id;
+    const [parcelas, lotes, certPend, pedAnali] = await Promise.all([
+      supabase.from('parcelas').select('id', { count: 'exact', head: true }).eq('produtor_id', pid),
+      supabase.from('lotes').select('id', { count: 'exact', head: true }).eq('produtor_id', pid),
+      supabase.from('certificados').select('id', { count: 'exact', head: true }).eq('produtor_id', pid).eq('estado', 'pendente'),
+      supabase.from('pedidos_apoio').select('id', { count: 'exact', head: true }).eq('produtor_id', pid).eq('estado', 'em_analise'),
+    ]);
+
     res.json({
       success: true,
-      produtor: { id: produtor.id, nome: produtor.nome, nbi: produtor.nbi,
-                  provincia: produtor.provincia, fileira: produtor.fileira },
-      stats: { parcelas: s.parcelas, lotes: s.lotes, certPend: s.certPend, pedAnali: s.pedAnali },
+      produtor: { id: produtor.id, nome: produtor.nome, nbi: produtor.nbi, provincia: produtor.provincia, fileira: produtor.fileira },
+      stats: { parcelas: parcelas.count, lotes: lotes.count, certPend: certPend.count, pedAnali: pedAnali.count },
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -77,20 +78,33 @@ app.post('/api/registar', async (req, res) => {
   if (!nome || !nbi || !pin) return res.status(400).json({ error: 'Nome, NBI e PIN são obrigatórios.' });
   if (pin.length < 6) return res.status(400).json({ error: 'PIN deve ter mínimo 6 caracteres.' });
   try {
-    const pool = await poolPromise;
-    const exist = await pool.request()
-      .input('nbi', sql.NVarChar, nbi.trim().toUpperCase())
-      .query('SELECT id FROM produtores WHERE nbi = @nbi');
-    if (exist.recordset.length > 0) return res.status(409).json({ error: 'Este NBI já está registado.' });
+    const nbiUpper = nbi.trim().toUpperCase();
+    const syntheticEmail = `${nbi.trim().toLowerCase()}@inca.ao`;
 
-    const pin_hash = await bcrypt.hash(pin, 10);
-    await pool.request()
-      .input('nome',     sql.NVarChar, nome.trim())
-      .input('nbi',      sql.NVarChar, nbi.trim().toUpperCase())
-      .input('telefone', sql.NVarChar, telefone || null)
-      .input('email',    sql.NVarChar, email    || null)
-      .input('pin_hash', sql.NVarChar, pin_hash)
-      .query('INSERT INTO produtores (nome, nbi, telefone, email, pin_hash) VALUES (@nome, @nbi, @telefone, @email, @pin_hash)');
+    const { data: existing } = await supabase.from('produtores').select('id').eq('nbi', nbiUpper).maybeSingle();
+    if (existing) return res.status(409).json({ error: 'Este NBI já está registado.' });
+
+    const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
+      email: syntheticEmail,
+      password: pin,
+      email_confirm: true,
+      user_metadata: { nbi: nbiUpper, tipo: 'produtor' }
+    });
+    if (authErr) return res.status(500).json({ error: authErr.message });
+
+    const { error: dbErr } = await supabase.from('produtores').insert({
+      nome: nome.trim(),
+      nbi: nbiUpper,
+      telefone: telefone || null,
+      email: email || null,
+      auth_user_id: authUser.user.id,
+      activo: false
+    });
+
+    if (dbErr) {
+      await supabase.auth.admin.deleteUser(authUser.user.id);
+      return res.status(500).json({ error: dbErr.message });
+    }
 
     res.status(201).json({ success: true, message: 'Conta criada. Aguarda validação pelo INCA (24–48h).' });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -100,146 +114,92 @@ app.post('/api/registar', async (req, res) => {
 //  RESET DE SENHA
 // ════════════════════════════════════════════════════════════
 
-// POST /api/reset-solicitar - Solicitar reset de senha
+// POST /api/reset-solicitar
 app.post('/api/reset-solicitar', async (req, res) => {
   const { nbi, email } = req.body;
   if (!nbi || !email) return res.status(400).json({ error: 'NBI e email são obrigatórios.' });
-
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('nbi', sql.NVarChar, nbi.trim().toUpperCase())
-      .input('email', sql.NVarChar, email.trim().toLowerCase())
-      .query('SELECT id, nome, email FROM produtores WHERE nbi = @nbi AND email = @email AND activo = 1');
+    const { data: produtor, error } = await supabase
+      .from('produtores')
+      .select('id, nome, email')
+      .eq('nbi', nbi.trim().toUpperCase())
+      .eq('email', email.trim().toLowerCase())
+      .eq('activo', true)
+      .maybeSingle();
 
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'NBI ou email não encontrados.' });
+    if (error || !produtor) return res.status(404).json({ error: 'NBI ou email não encontrados.' });
 
-    const produtor = result.recordset[0];
-    
-    // Gerar token de reset (válido por 24 horas)
     const resetToken = generateResetToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+    const expiresAt  = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    // Guardar token na base de dados (usando tabela temporária ou campo existente)
-    await pool.request()
-      .input('produtor_id', sql.Int, produtor.id)
-      .input('reset_token', sql.NVarChar, resetToken)
-      .input('reset_expires', sql.DateTime2, expiresAt)
-      .query(`
-        UPDATE produtores 
-        SET reset_token = @reset_token, reset_expires = @reset_expires 
-        WHERE id = @produtor_id
-      `);
+    await supabase.from('produtores')
+      .update({ reset_token: resetToken, reset_expires: expiresAt })
+      .eq('id', produtor.id);
 
-    // Em produção, enviar email aqui
-    // Por agora, retornamos o token para demonstração
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Instruções de reset enviadas para o email.',
-      // Apenas para demo - remover em produção
       demoToken: resetToken,
-      demoLink: `http://localhost:3001/reset-confirmar.html?token=${resetToken}&nbi=${nbi}`
+      demoLink: `http://localhost:${PORT}/reset-confirmar.html?token=${resetToken}&nbi=${nbi}`
     });
-  } catch (err) { 
-    res.status(500).json({ error: err.message }); 
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api-reset-confirmar - Confirmar reset de senha
+// POST /api/reset-confirmar
 app.post('/api/reset-confirmar', async (req, res) => {
   const { token, nbi, novoPin } = req.body;
-  if (!token || !nbi || !novoPin) 
-    return res.status(400).json({ error: 'Token, NBI e novo PIN são obrigatórios.' });
-
-  if (novoPin.length < 6) 
-    return res.status(400).json({ error: 'O novo PIN deve ter pelo menos 6 caracteres.' });
-
+  if (!token || !nbi || !novoPin) return res.status(400).json({ error: 'Token, NBI e novo PIN são obrigatórios.' });
+  if (novoPin.length < 6) return res.status(400).json({ error: 'O novo PIN deve ter pelo menos 6 caracteres.' });
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('nbi', sql.NVarChar, nbi.trim().toUpperCase())
-      .input('token', sql.NVarChar, token)
-      .query(`
-        SELECT id, reset_token, reset_expires 
-        FROM produtores 
-        WHERE nbi = @nbi AND reset_token = @token AND activo = 1
-      `);
+    const { data: produtor } = await supabase
+      .from('produtores')
+      .select('id, auth_user_id, reset_token, reset_expires')
+      .eq('nbi', nbi.trim().toUpperCase())
+      .eq('reset_token', token)
+      .eq('activo', true)
+      .maybeSingle();
 
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Token inválido ou expirado.' });
+    if (!produtor) return res.status(404).json({ error: 'Token inválido ou expirado.' });
 
-    const produtor = result.recordset[0];
-    
-    // Verificar se token não expirou
     if (new Date() > new Date(produtor.reset_expires)) {
-      await pool.request()
-        .input('nbi', sql.NVarChar, nbi.trim().toUpperCase())
-        .query('UPDATE produtores SET reset_token = NULL, reset_expires = NULL WHERE nbi = @nbi');
-      
+      await supabase.from('produtores').update({ reset_token: null, reset_expires: null }).eq('id', produtor.id);
       return res.status(400).json({ error: 'Token expirado. Solicite um novo reset.' });
     }
 
-    // Hash do novo PIN
-    const pin_hash = await bcrypt.hash(novoPin, 10);
-
-    // Actualizar senha e limpar token
-    await pool.request()
-      .input('produtor_id', sql.Int, produtor.id)
-      .input('pin_hash', sql.NVarChar, pin_hash)
-      .query(`
-        UPDATE produtores 
-        SET pin_hash = @pin_hash, reset_token = NULL, reset_expires = NULL, actualizado_em = GETDATE()
-        WHERE id = @produtor_id
-      `);
-
-    res.json({ 
-      success: true, 
-      message: 'PIN actualizado com sucesso! Pode fazer login com o novo PIN.' 
-    });
-  } catch (err) { 
-    res.status(500).json({ error: err.message }); 
-  }
-});
-
-// GET /api-reset-verificar - Verificar se token é válido
-app.get('/api/reset-verificar', async (req, res) => {
-  const { token, nbi } = req.query;
-  if (!token || !nbi) 
-    return res.status(400).json({ error: 'Token e NBI são obrigatórios.' });
-
-  try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('nbi', sql.NVarChar, nbi.trim().toUpperCase())
-      .input('token', sql.NVarChar, token)
-      .query(`
-        SELECT reset_expires 
-        FROM produtores 
-        WHERE nbi = @nbi AND reset_token = @token AND activo = 1
-      `);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Token inválido.' });
-
-    const { reset_expires } = result.recordset[0];
-    
-    // Verificar se token não expirou
-    if (new Date() > new Date(reset_expires)) {
-      return res.status(400).json({ error: 'Token expirado.' });
+    if (produtor.auth_user_id) {
+      await supabase.auth.admin.updateUserById(produtor.auth_user_id, { password: novoPin });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Token válido.' 
-    });
-  } catch (err) { 
-    res.status(500).json({ error: err.message }); 
-  }
+    await supabase.from('produtores')
+      .update({ reset_token: null, reset_expires: null, actualizado_em: new Date().toISOString() })
+      .eq('id', produtor.id);
+
+    res.json({ success: true, message: 'PIN actualizado com sucesso! Pode fazer login com o novo PIN.' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/reset-verificar
+app.get('/api/reset-verificar', async (req, res) => {
+  const { token, nbi } = req.query;
+  if (!token || !nbi) return res.status(400).json({ error: 'Token e NBI são obrigatórios.' });
+  try {
+    const { data: produtor } = await supabase
+      .from('produtores')
+      .select('reset_expires')
+      .eq('nbi', nbi.trim().toUpperCase())
+      .eq('reset_token', token)
+      .eq('activo', true)
+      .maybeSingle();
+
+    if (!produtor) return res.status(404).json({ error: 'Token inválido.' });
+    if (new Date() > new Date(produtor.reset_expires)) return res.status(400).json({ error: 'Token expirado.' });
+
+    res.json({ success: true, message: 'Token válido.' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  CADASTRO
+//  CADASTRO DE PRODUTOR
 // ════════════════════════════════════════════════════════════
 
 app.post('/api/produtores', async (req, res) => {
@@ -248,51 +208,25 @@ app.post('/api/produtores', async (req, res) => {
   if (!nbi || !nome || !provincia || !fileira || !area_ha)
     return res.status(400).json({ error: 'Campos obrigatórios em falta.' });
   try {
-    const pool = await poolPromise;
-    const exist = await pool.request()
-      .input('nbi', sql.NVarChar, nbi.trim().toUpperCase())
-      .query('SELECT id FROM produtores WHERE nbi = @nbi');
+    const nbiUpper = nbi.trim().toUpperCase();
+    const { data: existing } = await supabase.from('produtores').select('id').eq('nbi', nbiUpper).maybeSingle();
+    const updates = { nome, telefone: telefone || null, email: email || null, provincia, municipio: municipio || null,
+                      fileira, area_ha: parseFloat(area_ha), tipo_produtor: tipo_produtor || 'Individual / Familiar' };
 
-    if (exist.recordset.length > 0) {
-      await pool.request()
-        .input('nome',          sql.NVarChar,  nome)
-        .input('telefone',      sql.NVarChar,  telefone   || null)
-        .input('email',         sql.NVarChar,  email      || null)
-        .input('provincia',     sql.NVarChar,  provincia)
-        .input('municipio',     sql.NVarChar,  municipio  || null)
-        .input('fileira',       sql.NVarChar,  fileira)
-        .input('area_ha',       sql.Decimal,   parseFloat(area_ha))
-        .input('tipo_produtor', sql.NVarChar,  tipo_produtor || 'Individual / Familiar')
-        .input('nbi',           sql.NVarChar,  nbi.trim().toUpperCase())
-        .query(`UPDATE produtores SET nome=@nome, telefone=@telefone, email=@email,
-                provincia=@provincia, municipio=@municipio, fileira=@fileira,
-                area_ha=@area_ha, tipo_produtor=@tipo_produtor WHERE nbi=@nbi`);
+    let pid;
+    if (existing) {
+      await supabase.from('produtores').update(updates).eq('nbi', nbiUpper);
+      pid = existing.id;
     } else {
-      await pool.request()
-        .input('nome',          sql.NVarChar,  nome)
-        .input('nbi',           sql.NVarChar,  nbi.trim().toUpperCase())
-        .input('telefone',      sql.NVarChar,  telefone   || null)
-        .input('email',         sql.NVarChar,  email      || null)
-        .input('provincia',     sql.NVarChar,  provincia)
-        .input('municipio',     sql.NVarChar,  municipio  || null)
-        .input('fileira',       sql.NVarChar,  fileira)
-        .input('area_ha',       sql.Decimal,   parseFloat(area_ha))
-        .input('tipo_produtor', sql.NVarChar,  tipo_produtor || 'Individual / Familiar')
-        .query(`INSERT INTO produtores (nome, nbi, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor)
-                VALUES (@nome, @nbi, @telefone, @email, @provincia, @municipio, @fileira, @area_ha, @tipo_produtor)`);
+      const { data: newP } = await supabase.from('produtores').insert({ ...updates, nbi: nbiUpper }).select('id').single();
+      pid = newP?.id || produtor_id;
     }
 
-    if (latitude && longitude) {
-      const pid = exist.recordset.length > 0 ? exist.recordset[0].id : produtor_id;
-      if (pid) {
-        await pool.request()
-          .input('pid',       sql.Int,     pid)
-          .input('fileira',   sql.NVarChar, fileira)
-          .input('area_ha',   sql.Decimal,  parseFloat(area_ha))
-          .input('latitude',  sql.Decimal,  parseFloat(latitude))
-          .input('longitude', sql.Decimal,  parseFloat(longitude))
-          .query('INSERT INTO parcelas (produtor_id, fileira, area_ha, latitude, longitude) VALUES (@pid, @fileira, @area_ha, @latitude, @longitude)');
-      }
+    if (latitude && longitude && pid) {
+      await supabase.from('parcelas').insert({
+        produtor_id: pid, fileira, area_ha: parseFloat(area_ha),
+        latitude: parseFloat(latitude), longitude: parseFloat(longitude)
+      });
     }
 
     res.status(201).json({ success: true, referencia: refCode('INCA-CAD') });
@@ -308,18 +242,12 @@ app.post('/api/certificados', async (req, res) => {
   if (!produto || !quantidade || !destino || !data_exportacao)
     return res.status(400).json({ error: 'Campos obrigatórios em falta.' });
   try {
-    const pool = await poolPromise;
     const referencia = refCode('CERT');
-    await pool.request()
-      .input('produtor_id',    sql.Int,      produtor_id    || null)
-      .input('produto',        sql.NVarChar, produto)
-      .input('quantidade_kg',  sql.Decimal,  parseFloat(quantidade))
-      .input('numero_lote',    sql.NVarChar, lote           || null)
-      .input('pais_destino',   sql.NVarChar, destino)
-      .input('data_exportacao',sql.Date,     new Date(data_exportacao))
-      .input('referencia',     sql.NVarChar, referencia)
-      .query(`INSERT INTO certificados (produtor_id, produto, quantidade_kg, numero_lote, pais_destino, data_exportacao, referencia)
-              VALUES (@produtor_id, @produto, @quantidade_kg, @numero_lote, @pais_destino, @data_exportacao, @referencia)`);
+    await supabase.from('certificados').insert({
+      produtor_id: produtor_id || null, produto,
+      quantidade_kg: parseFloat(quantidade), numero_lote: lote || null,
+      pais_destino: destino, data_exportacao, referencia
+    });
     res.status(201).json({ success: true, referencia });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -331,19 +259,13 @@ app.post('/api/certificados', async (req, res) => {
 app.get('/api/rastreio/:codigo', async (req, res) => {
   const codigo = req.params.codigo.trim().toUpperCase();
   try {
-    const pool = await poolPromise;
-    const loteRes = await pool.request()
-      .input('codigo', sql.NVarChar, codigo)
-      .query('SELECT * FROM lotes WHERE codigo = @codigo');
-    if (loteRes.recordset.length === 0)
-      return res.status(404).json({ error: 'Lote não encontrado.' });
+    const { data: lote, error } = await supabase.from('lotes').select('*').eq('codigo', codigo).single();
+    if (error || !lote) return res.status(404).json({ error: 'Lote não encontrado.' });
 
-    const lote = loteRes.recordset[0];
-    const eventosRes = await pool.request()
-      .input('lote_id', sql.Int, lote.id)
-      .query('SELECT * FROM lote_eventos WHERE lote_id = @lote_id ORDER BY data_evento ASC');
+    const { data: eventos } = await supabase.from('lote_eventos')
+      .select('*').eq('lote_id', lote.id).order('data_evento', { ascending: true });
 
-    res.json({ lote, eventos: eventosRes.recordset });
+    res.json({ lote, eventos: eventos || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -353,20 +275,14 @@ app.get('/api/rastreio/:codigo', async (req, res) => {
 
 app.post('/api/apoios', async (req, res) => {
   const { produtor_id, tipo, fileira, valor_estimado, descricao } = req.body;
-  if (!tipo || !fileira || !descricao)
-    return res.status(400).json({ error: 'Campos obrigatórios em falta.' });
+  if (!tipo || !fileira || !descricao) return res.status(400).json({ error: 'Campos obrigatórios em falta.' });
   try {
-    const pool = await poolPromise;
     const referencia = refCode('APOIO');
-    await pool.request()
-      .input('produtor_id',    sql.Int,      produtor_id     || null)
-      .input('tipo',           sql.NVarChar, tipo)
-      .input('fileira',        sql.NVarChar, fileira)
-      .input('valor_estimado', sql.Decimal,  valor_estimado ? parseFloat(valor_estimado) : null)
-      .input('descricao',      sql.NVarChar, descricao)
-      .input('referencia',     sql.NVarChar, referencia)
-      .query(`INSERT INTO pedidos_apoio (produtor_id, tipo, fileira, valor_estimado, descricao, referencia)
-              VALUES (@produtor_id, @tipo, @fileira, @valor_estimado, @descricao, @referencia)`);
+    await supabase.from('pedidos_apoio').insert({
+      produtor_id: produtor_id || null, tipo, fileira,
+      valor_estimado: valor_estimado ? parseFloat(valor_estimado) : null,
+      descricao, referencia
+    });
     res.status(201).json({ success: true, referencia });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -378,32 +294,23 @@ app.post('/api/apoios', async (req, res) => {
 app.get('/api/estatisticas', async (req, res) => {
   const tipo = req.query.tipo || 'producao';
   try {
-    const pool = await poolPromise;
     if (tipo === 'producao') {
-      const fileiras = await pool.request()
-        .query('SELECT fileira, SUM(quantidade_kg) AS total_kg FROM lotes GROUP BY fileira ORDER BY total_kg DESC');
-      const provincias = await pool.request()
-        .query(`SELECT p.provincia, SUM(l.quantidade_kg) AS total_kg
-                FROM lotes l JOIN produtores p ON l.produtor_id = p.id
-                WHERE l.fileira = 'Café'
-                GROUP BY p.provincia ORDER BY total_kg DESC`);
-      return res.json({ fileiras: fileiras.recordset, provincias: provincias.recordset });
+      const [fileiras, provincias] = await Promise.all([
+        supabase.rpc('get_producao_por_fileira'),
+        supabase.rpc('get_producao_por_provincia'),
+      ]);
+      return res.json({ fileiras: fileiras.data || [], provincias: provincias.data || [] });
     }
     if (tipo === 'exportacao') {
-      const destinos = await pool.request()
-        .query(`SELECT pais_destino, SUM(quantidade_kg) AS total_kg
-                FROM certificados WHERE estado = 'emitido'
-                GROUP BY pais_destino ORDER BY total_kg DESC`);
-      const porFileira = await pool.request()
-        .query(`SELECT produto, SUM(quantidade_kg) AS total_kg
-                FROM certificados WHERE estado = 'emitido'
-                GROUP BY produto ORDER BY total_kg DESC`);
-      return res.json({ destinos: destinos.recordset, porFileira: porFileira.recordset });
+      const [destinos, porFileira] = await Promise.all([
+        supabase.rpc('get_exportacao_por_destino'),
+        supabase.rpc('get_exportacao_por_fileira'),
+      ]);
+      return res.json({ destinos: destinos.data || [], porFileira: porFileira.data || [] });
     }
     if (tipo === 'precos') {
-      const rows = await pool.request()
-        .query('SELECT * FROM precos_mercado ORDER BY atualizado_em DESC');
-      return res.json(rows.recordset);
+      const { data } = await supabase.from('precos_mercado').select('*').order('atualizado_em', { ascending: false });
+      return res.json(data || []);
     }
     res.status(400).json({ error: 'Tipo inválido.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -416,112 +323,94 @@ app.get('/api/estatisticas', async (req, res) => {
 app.get('/api/artigos', async (req, res) => {
   const { categoria, destaque, limit = 10, offset = 0 } = req.query;
   try {
-    const pool = await poolPromise;
-    let query = `SELECT a.id, a.titulo, a.slug, a.resumo, a.imagem_destaque, a.tags, 
-                        a.publicado_em, a.visualizacoes, c.nome as categoria_nome, c.slug as categoria_slug
-                 FROM artigos a
-                 LEFT JOIN categorias_conteudo c ON a.categoria_id = c.id
-                 WHERE a.estado = 'publicado'`;
-    const request = pool.request();
+    let query = supabase.from('artigos')
+      .select('id, titulo, slug, resumo, imagem_destaque, tags, publicado_em, visualizacoes, categorias_conteudo(nome, slug)')
+      .eq('estado', 'publicado')
+      .order('publicado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
-    if (categoria) {
-      query += ' AND c.slug = @categoria';
-      request.input('categoria', sql.NVarChar, categoria);
-    }
-    if (destaque !== undefined) {
-      query += ' AND a.destaque = @destaque';
-      request.input('destaque', sql.Bit, destaque === 'true' || destaque === '1' ? 1 : 0);
-    }
+    if (categoria) query = query.eq('categorias_conteudo.slug', categoria);
+    if (destaque !== undefined) query = query.eq('destaque', destaque === 'true' || destaque === '1');
 
-    query += ' ORDER BY a.publicado_em DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
-    request.input('offset', sql.Int, parseInt(offset));
-    request.input('limit', sql.Int, parseInt(limit));
+    const { data, error } = await query;
+    if (error) throw error;
 
-    const result = await request.query(query);
-    res.json({ artigos: result.recordset });
+    const artigos = (data || []).map(({ categorias_conteudo: cat, ...a }) => ({
+      ...a,
+      categoria_nome: cat?.nome,
+      categoria_slug: cat?.slug,
+    }));
+
+    res.json({ artigos });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/artigos/:slug', async (req, res) => {
   const { slug } = req.params;
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('slug', sql.NVarChar, slug)
-      .query(`SELECT a.*, c.nome as categoria_nome, c.slug as categoria_slug
-              FROM artigos a
-              LEFT JOIN categorias_conteudo c ON a.categoria_id = c.id
-              WHERE a.slug = @slug AND a.estado = 'publicado'`);
+    const { data, error } = await supabase.from('artigos')
+      .select('*, categorias_conteudo(nome, slug)')
+      .eq('slug', slug)
+      .eq('estado', 'publicado')
+      .single();
 
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Artigo não encontrado.' });
+    if (error || !data) return res.status(404).json({ error: 'Artigo não encontrado.' });
 
-    await pool.request()
-      .input('slug', sql.NVarChar, slug)
-      .query('UPDATE artigos SET visualizacoes = visualizacoes + 1 WHERE slug = @slug');
+    await supabase.from('artigos').update({ visualizacoes: (data.visualizacoes || 0) + 1 }).eq('slug', slug);
 
-    res.json(result.recordset[0]);
+    const { categorias_conteudo: cat, ...artigo } = data;
+    res.json({ ...artigo, categoria_nome: cat?.nome, categoria_slug: cat?.slug });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/anuncios/activos', async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query(`SELECT id, titulo, mensagem, tipo, link_url, link_texto, data_inicio, data_fim
-              FROM anuncios
-              WHERE activo = 1 
-                AND data_inicio <= GETDATE()
-                AND (data_fim IS NULL OR data_fim >= GETDATE())
-              ORDER BY 
-                CASE tipo 
-                  WHEN 'urgente' THEN 1
-                  WHEN 'aviso' THEN 2
-                  WHEN 'sucesso' THEN 3
-                  ELSE 4
-                END,
-                data_inicio DESC`);
+    const now = new Date().toISOString();
+    const { data, error } = await supabase.from('anuncios')
+      .select('id, titulo, mensagem, tipo, link_url, link_texto, data_inicio, data_fim')
+      .eq('activo', true)
+      .lte('data_inicio', now)
+      .or(`data_fim.is.null,data_fim.gte.${now}`);
 
-    res.json({ anuncios: result.recordset });
+    if (error) throw error;
+
+    const typeOrder = { urgente: 1, aviso: 2, sucesso: 3, info: 4 };
+    const sorted = (data || []).sort((a, b) =>
+      (typeOrder[a.tipo] || 4) - (typeOrder[b.tipo] || 4) ||
+      new Date(b.data_inicio) - new Date(a.data_inicio)
+    );
+
+    res.json({ anuncios: sorted });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/faq', async (req, res) => {
   const { categoria } = req.query;
   try {
-    const pool = await poolPromise;
-    let query = 'SELECT id, pergunta, resposta, categoria FROM faq WHERE activo = 1';
-    const request = pool.request();
-
-    if (categoria) {
-      query += ' AND categoria = @categoria';
-      request.input('categoria', sql.NVarChar, categoria);
-    }
-
-    query += ' ORDER BY ordem ASC, criado_em DESC';
-
-    const result = await request.query(query);
-    res.json({ faq: result.recordset });
+    let query = supabase.from('faq').select('id, pergunta, resposta, categoria').eq('activo', true).order('ordem').order('criado_em', { ascending: false });
+    if (categoria) query = query.eq('categoria', categoria);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ faq: data || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/homepage-stats
 app.get('/api/homepage-stats', async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query('SELECT chave, valor_num, sufixo, label_pt, label_en FROM kpis_homepage ORDER BY ordem ASC');
-    res.json({ kpis: result.recordset });
+    const { data, error } = await supabase.from('kpis_homepage')
+      .select('chave, valor_num, sufixo, label_pt, label_en')
+      .order('ordem');
+    if (error) throw error;
+    res.json({ kpis: data || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/fileiras
 app.get('/api/fileiras', async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query('SELECT * FROM fileiras WHERE activo = 1 ORDER BY ordem ASC, id ASC');
-    res.json({ fileiras: result.recordset });
+    const { data, error } = await supabase.from('fileiras')
+      .select('*').eq('activo', true).order('ordem').order('id');
+    if (error) throw error;
+    res.json({ fileiras: data || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -529,270 +418,164 @@ app.get('/api/fileiras', async (req, res) => {
 //  GESTÃO DE PRODUTORES
 // ════════════════════════════════════════════════════════════
 
-// GET /api/produtores/id/:id - Dados do produtor por ID (mais fiável que por NBI)
 app.get('/api/produtores/id/:id', async (req, res) => {
-  const { id } = req.params;
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .query('SELECT id, nome, nbi, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor, activo, criado_em FROM produtores WHERE id = @id');
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Produtor não encontrado.' });
-
-    res.json({ produtor: result.recordset[0] });
+    const { data, error } = await supabase.from('produtores')
+      .select('id, nome, nbi, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor, activo, criado_em')
+      .eq('id', parseInt(req.params.id))
+      .single();
+    if (error || !data) return res.status(404).json({ error: 'Produtor não encontrado.' });
+    res.json({ produtor: data });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/produtores/:nbi - Dados do produtor
 app.get('/api/produtores/:nbi', async (req, res) => {
-  const { nbi } = req.params;
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('nbi', sql.NVarChar, nbi.trim().toUpperCase())
-      .query('SELECT id, nome, nbi, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor, activo, criado_em FROM produtores WHERE nbi = @nbi');
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Produtor não encontrado.' });
-
-    res.json({ produtor: result.recordset[0] });
+    const { data, error } = await supabase.from('produtores')
+      .select('id, nome, nbi, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor, activo, criado_em')
+      .eq('nbi', req.params.nbi.trim().toUpperCase())
+      .single();
+    if (error || !data) return res.status(404).json({ error: 'Produtor não encontrado.' });
+    res.json({ produtor: data });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/produtores/:id - Atualizar produtor
 app.put('/api/produtores/:id', async (req, res) => {
-  const { id } = req.params;
   const { nome, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor } = req.body;
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .input('nome', sql.NVarChar, nome)
-      .input('telefone', sql.NVarChar, telefone || null)
-      .input('email', sql.NVarChar, email || null)
-      .input('provincia', sql.NVarChar, provincia)
-      .input('municipio', sql.NVarChar, municipio || null)
-      .input('fileira', sql.NVarChar, fileira)
-      .input('area_ha', sql.Decimal, parseFloat(area_ha))
-      .input('tipo_produtor', sql.NVarChar, tipo_produtor || 'Individual / Familiar')
-      .query(`UPDATE produtores SET nome=@nome, telefone=@telefone, email=@email,
-              provincia=@provincia, municipio=@municipio, fileira=@fileira,
-              area_ha=@area_ha, tipo_produtor=@tipo_produtor, actualizado_em=GETDATE()
-              WHERE id=@id`);
-
+    await supabase.from('produtores').update({
+      nome, telefone: telefone || null, email: email || null, provincia,
+      municipio: municipio || null, fileira, area_ha: parseFloat(area_ha),
+      tipo_produtor: tipo_produtor || 'Individual / Familiar',
+      actualizado_em: new Date().toISOString()
+    }).eq('id', parseInt(req.params.id));
     res.json({ success: true, message: 'Produtor atualizado com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/produtores/:id/parcelas - Parcelas do produtor
 app.get('/api/produtores/:id/parcelas', async (req, res) => {
-  const { id } = req.params;
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .query('SELECT id, fileira, area_ha, latitude, longitude, criado_em FROM parcelas WHERE produtor_id = @id ORDER BY criado_em DESC');
-
-    res.json({ parcelas: result.recordset });
+    const { data, error } = await supabase.from('parcelas')
+      .select('id, fileira, area_ha, latitude, longitude, criado_em')
+      .eq('produtor_id', parseInt(req.params.id))
+      .order('criado_em', { ascending: false });
+    if (error) throw error;
+    res.json({ parcelas: data || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/produtores/:id/parcelas - Adicionar parcela
 app.post('/api/produtores/:id/parcelas', async (req, res) => {
-  const { id } = req.params;
   const { fileira, area_ha, latitude, longitude } = req.body;
   if (!fileira) return res.status(400).json({ error: 'Fileira é obrigatória.' });
   const toDecimal = v => (v != null && !isNaN(parseFloat(v))) ? parseFloat(v) : null;
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('produtor_id', sql.Int, parseInt(id))
-      .input('fileira', sql.NVarChar, fileira)
-      .input('area_ha', sql.Decimal, toDecimal(area_ha))
-      .input('latitude', sql.Decimal, toDecimal(latitude))
-      .input('longitude', sql.Decimal, toDecimal(longitude))
-      .query('INSERT INTO parcelas (produtor_id, fileira, area_ha, latitude, longitude) VALUES (@produtor_id, @fileira, @area_ha, @latitude, @longitude)');
-
+    await supabase.from('parcelas').insert({
+      produtor_id: parseInt(req.params.id), fileira,
+      area_ha: toDecimal(area_ha), latitude: toDecimal(latitude), longitude: toDecimal(longitude)
+    });
     res.status(201).json({ success: true, message: 'Parcela registada com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/produtores/:id/parcelas/:parcelaId - Remover parcela
 app.delete('/api/produtores/:id/parcelas/:parcelaId', async (req, res) => {
-  const { id, parcelaId } = req.params;
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .input('parcelaId', sql.Int, parseInt(parcelaId))
-      .query('DELETE FROM parcelas WHERE produtor_id = @id AND id = @parcelaId');
-
+    await supabase.from('parcelas')
+      .delete()
+      .eq('produtor_id', parseInt(req.params.id))
+      .eq('id', parseInt(req.params.parcelaId));
     res.json({ success: true, message: 'Parcela removida com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/produtores/:id/parcelas/:parcelaId - Atualizar parcela
 app.put('/api/produtores/:id/parcelas/:parcelaId', async (req, res) => {
-  const { id, parcelaId } = req.params;
   const { fileira, area_ha, latitude, longitude } = req.body;
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .input('parcelaId', sql.Int, parseInt(parcelaId))
-      .input('fileira', sql.NVarChar, fileira)
-      .input('area_ha', sql.Decimal, parseFloat(area_ha))
-      .input('latitude', sql.Decimal, parseFloat(latitude) || null)
-      .input('longitude', sql.Decimal, parseFloat(longitude) || null)
-      .query(`UPDATE parcelas SET fileira=@fileira, area_ha=@area_ha, 
-              latitude=@latitude, longitude=@longitude 
-              WHERE produtor_id=@id AND id=@parcelaId`);
-
+    await supabase.from('parcelas').update({
+      fileira, area_ha: parseFloat(area_ha),
+      latitude: latitude ? parseFloat(latitude) : null,
+      longitude: longitude ? parseFloat(longitude) : null,
+    }).eq('produtor_id', parseInt(req.params.id)).eq('id', parseInt(req.params.parcelaId));
     res.json({ success: true, message: 'Parcela actualizada com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  CERTIFICADOS
+//  CERTIFICADOS (CRUD)
 // ════════════════════════════════════════════════════════════
 
-// GET /api/certificados - Listar certificados (com filtros)
 app.get('/api/certificados', async (req, res) => {
   const { produtor_id, estado, referencia } = req.query;
   try {
-    const pool = await poolPromise;
-    let query = 'SELECT c.*, p.nome as produtor_nome FROM certificados c LEFT JOIN produtores p ON c.produtor_id = p.id WHERE 1=1';
-    const request = pool.request();
-
-    if (produtor_id) {
-      query += ' AND c.produtor_id = @produtor_id';
-      request.input('produtor_id', sql.Int, parseInt(produtor_id));
-    }
-    if (estado) {
-      query += ' AND c.estado = @estado';
-      request.input('estado', sql.NVarChar, estado);
-    }
-    if (referencia) {
-      query += ' AND c.referencia = @referencia';
-      request.input('referencia', sql.NVarChar, referencia);
-    }
-
-    query += ' ORDER BY c.criado_em DESC';
-
-    const result = await request.query(query);
-    res.json({ certificados: result.recordset });
+    let query = supabase.from('certificados').select('*, produtores(nome)').order('criado_em', { ascending: false });
+    if (produtor_id) query = query.eq('produtor_id', parseInt(produtor_id));
+    if (estado)      query = query.eq('estado', estado);
+    if (referencia)  query = query.eq('referencia', referencia);
+    const { data, error } = await query;
+    if (error) throw error;
+    const certificados = (data || []).map(({ produtores: p, ...c }) => ({ ...c, produtor_nome: p?.nome }));
+    res.json({ certificados });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/certificados/:referencia - Detalhes do certificado
 app.get('/api/certificados/:referencia', async (req, res) => {
-  const { referencia } = req.params;
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('referencia', sql.NVarChar, referencia)
-      .query(`SELECT c.*, p.nome as produtor_nome, p.nbi as produtor_nbi
-              FROM certificados c
-              LEFT JOIN produtores p ON c.produtor_id = p.id
-              WHERE c.referencia = @referencia`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Certificado não encontrado.' });
-
-    res.json({ certificado: result.recordset[0] });
+    const { data, error } = await supabase.from('certificados')
+      .select('*, produtores(nome, nbi)')
+      .eq('referencia', req.params.referencia)
+      .single();
+    if (error || !data) return res.status(404).json({ error: 'Certificado não encontrado.' });
+    const { produtores: p, ...cert } = data;
+    res.json({ certificado: { ...cert, produtor_nome: p?.nome, produtor_nbi: p?.nbi } });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/certificados/:id - Atualizar estado do certificado
 app.put('/api/certificados/:id', async (req, res) => {
-  const { id } = req.params;
   const { estado, observacoes } = req.body;
-  if (!estado || !['pendente', 'emitido', 'rejeitado'].includes(estado))
+  if (!estado || !['pendente','emitido','rejeitado'].includes(estado))
     return res.status(400).json({ error: 'Estado inválido.' });
-
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .input('estado', sql.NVarChar, estado)
-      .input('observacoes', sql.NVarChar, observacoes || null)
-      .query('UPDATE certificados SET estado=@estado, observacoes=@observacoes WHERE id=@id');
-
+    await supabase.from('certificados').update({ estado, observacoes: observacoes || null }).eq('id', parseInt(req.params.id));
     res.json({ success: true, message: 'Certificado atualizado com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  PEDIDOS DE APOIO
+//  PEDIDOS DE APOIO (CRUD)
 // ════════════════════════════════════════════════════════════
 
-// GET /api/apoios - Listar pedidos (com filtros)
 app.get('/api/apoios', async (req, res) => {
   const { produtor_id, estado, tipo, fileira } = req.query;
   try {
-    const pool = await poolPromise;
-    let query = 'SELECT a.*, p.nome as produtor_nome FROM pedidos_apoio a LEFT JOIN produtores p ON a.produtor_id = p.id WHERE 1=1';
-    const request = pool.request();
-
-    if (produtor_id) {
-      query += ' AND a.produtor_id = @produtor_id';
-      request.input('produtor_id', sql.Int, parseInt(produtor_id));
-    }
-    if (estado) {
-      query += ' AND a.estado = @estado';
-      request.input('estado', sql.NVarChar, estado);
-    }
-    if (tipo) {
-      query += ' AND a.tipo = @tipo';
-      request.input('tipo', sql.NVarChar, tipo);
-    }
-    if (fileira) {
-      query += ' AND a.fileira = @fileira';
-      request.input('fileira', sql.NVarChar, fileira);
-    }
-
-    query += ' ORDER BY a.criado_em DESC';
-
-    const result = await request.query(query);
-    res.json({ apoios: result.recordset });
+    let query = supabase.from('pedidos_apoio').select('*, produtores(nome)').order('criado_em', { ascending: false });
+    if (produtor_id) query = query.eq('produtor_id', parseInt(produtor_id));
+    if (estado)      query = query.eq('estado', estado);
+    if (tipo)        query = query.eq('tipo', tipo);
+    if (fileira)     query = query.eq('fileira', fileira);
+    const { data, error } = await query;
+    if (error) throw error;
+    const apoios = (data || []).map(({ produtores: p, ...a }) => ({ ...a, produtor_nome: p?.nome }));
+    res.json({ apoios });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/apoios/:referencia - Detalhes do pedido
 app.get('/api/apoios/:referencia', async (req, res) => {
-  const { referencia } = req.params;
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('referencia', sql.NVarChar, referencia)
-      .query(`SELECT a.*, p.nome as produtor_nome, p.nbi as produtor_nbi
-              FROM pedidos_apoio a
-              LEFT JOIN produtores p ON a.produtor_id = p.id
-              WHERE a.referencia = @referencia`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Pedido não encontrado.' });
-
-    res.json({ apoio: result.recordset[0] });
+    const { data, error } = await supabase.from('pedidos_apoio')
+      .select('*, produtores(nome, nbi)')
+      .eq('referencia', req.params.referencia)
+      .single();
+    if (error || !data) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    const { produtores: p, ...apoio } = data;
+    res.json({ apoio: { ...apoio, produtor_nome: p?.nome, produtor_nbi: p?.nbi } });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/apoios/:id - Atualizar estado do pedido
 app.put('/api/apoios/:id', async (req, res) => {
-  const { id } = req.params;
   const { estado } = req.body;
-  if (!estado || !['em_analise', 'aprovado', 'rejeitado'].includes(estado))
+  if (!estado || !['em_analise','aprovado','rejeitado'].includes(estado))
     return res.status(400).json({ error: 'Estado inválido.' });
-
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .input('estado', sql.NVarChar, estado)
-      .query('UPDATE pedidos_apoio SET estado=@estado WHERE id=@id');
-
+    await supabase.from('pedidos_apoio').update({ estado }).eq('id', parseInt(req.params.id));
     res.json({ success: true, message: 'Pedido atualizado com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -801,124 +584,70 @@ app.put('/api/apoios/:id', async (req, res) => {
 //  LOTES / RASTREABILIDADE
 // ════════════════════════════════════════════════════════════
 
-// POST /api/lotes - Criar novo lote
 app.post('/api/lotes', async (req, res) => {
   const { produtor_id, fileira, produto, quantidade_kg, provincia, municipio, estado } = req.body;
   if (!fileira || !produto || !quantidade_kg || !provincia)
     return res.status(400).json({ error: 'Campos obrigatórios em falta.' });
-
   try {
-    const pool = await poolPromise;
     const codigo = refCode('LOTE');
+    const { data: lote, error } = await supabase.from('lotes')
+      .insert({ codigo, produtor_id: produtor_id || null, fileira, produto,
+                quantidade_kg: parseFloat(quantidade_kg), provincia, municipio: municipio || null,
+                estado: estado || 'colhido' })
+      .select('id').single();
+    if (error) throw error;
 
-    await pool.request()
-      .input('codigo', sql.NVarChar, codigo)
-      .input('produtor_id', sql.Int, produtor_id || null)
-      .input('fileira', sql.NVarChar, fileira)
-      .input('produto', sql.NVarChar, produto)
-      .input('quantidade_kg', sql.Decimal, parseFloat(quantidade_kg))
-      .input('provincia', sql.NVarChar, provincia)
-      .input('municipio', sql.NVarChar, municipio || null)
-      .input('estado', sql.NVarChar, estado || 'colhido')
-      .query(`INSERT INTO lotes (codigo, produtor_id, fileira, produto, quantidade_kg, provincia, municipio, estado)
-              VALUES (@codigo, @produtor_id, @fileira, @produto, @quantidade_kg, @provincia, @municipio, @estado)`);
-
-    // Registar evento inicial
-    const lote = await pool.request()
-      .input('codigo', sql.NVarChar, codigo)
-      .query('SELECT id FROM lotes WHERE codigo = @codigo');
-
-    if (lote.recordset.length > 0) {
-      await pool.request()
-        .input('lote_id', sql.Int, lote.recordset[0].id)
-        .input('titulo', sql.NVarChar, '🌱 Lote Registado')
-        .input('descricao', sql.NVarChar, `Lote ${codigo} criado no sistema INCA`)
-        .query('INSERT INTO lote_eventos (lote_id, titulo, descricao) VALUES (@lote_id, @titulo, @descricao)');
-    }
+    await supabase.from('lote_eventos').insert({
+      lote_id: lote.id, titulo: '🌱 Lote Registado',
+      descricao: `Lote ${codigo} criado no sistema INCA`
+    });
 
     res.status(201).json({ success: true, codigo, message: 'Lote registado com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/lotes - Listar lotes (com filtros)
 app.get('/api/lotes', async (req, res) => {
   const { produtor_id, fileira, estado, produto } = req.query;
   try {
-    const pool = await poolPromise;
-    let query = 'SELECT l.*, p.nome as produtor_nome FROM lotes l LEFT JOIN produtores p ON l.produtor_id = p.id WHERE 1=1';
-    const request = pool.request();
-
-    if (produtor_id) {
-      query += ' AND l.produtor_id = @produtor_id';
-      request.input('produtor_id', sql.Int, parseInt(produtor_id));
-    }
-    if (fileira) {
-      query += ' AND l.fileira = @fileira';
-      request.input('fileira', sql.NVarChar, fileira);
-    }
-    if (estado) {
-      query += ' AND l.estado = @estado';
-      request.input('estado', sql.NVarChar, estado);
-    }
-    if (produto) {
-      query += ' AND l.produto = @produto';
-      request.input('produto', sql.NVarChar, produto);
-    }
-
-    query += ' ORDER BY l.criado_em DESC';
-
-    const result = await request.query(query);
-    res.json({ lotes: result.recordset });
+    let query = supabase.from('lotes').select('*, produtores(nome)').order('criado_em', { ascending: false });
+    if (produtor_id) query = query.eq('produtor_id', parseInt(produtor_id));
+    if (fileira)     query = query.eq('fileira', fileira);
+    if (estado)      query = query.eq('estado', estado);
+    if (produto)     query = query.eq('produto', produto);
+    const { data, error } = await query;
+    if (error) throw error;
+    const lotes = (data || []).map(({ produtores: p, ...l }) => ({ ...l, produtor_nome: p?.nome }));
+    res.json({ lotes });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/lotes/:id - Atualizar lote
 app.put('/api/lotes/:id', async (req, res) => {
-  const { id } = req.params;
   const { estado } = req.body;
-  if (!estado || !['colhido', 'em_processamento', 'pronto', 'exportado'].includes(estado))
+  if (!estado || !['colhido','em_processamento','pronto','exportado'].includes(estado))
     return res.status(400).json({ error: 'Estado inválido.' });
-
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .input('estado', sql.NVarChar, estado)
-      .query('UPDATE lotes SET estado=@estado WHERE id=@id');
+    const id = parseInt(req.params.id);
+    await supabase.from('lotes').update({ estado }).eq('id', id);
 
-    // Registar evento
     const tituloMap = {
-      'colhido': '☀️ Colheita',
-      'em_processamento': '⚙️ Processamento',
-      'pronto': '✅ Pronto para Exportação',
-      'exportado': '🚢 Exportado'
+      colhido: '☀️ Colheita', em_processamento: '⚙️ Processamento',
+      pronto: '✅ Pronto para Exportação', exportado: '🚢 Exportado'
     };
-
-    await pool.request()
-      .input('lote_id', sql.Int, parseInt(id))
-      .input('titulo', sql.NVarChar, tituloMap[estado])
-      .input('descricao', sql.NVarChar, `Estado atualizado para: ${estado}`)
-      .query('INSERT INTO lote_eventos (lote_id, titulo, descricao) VALUES (@lote_id, @titulo, @descricao)');
+    await supabase.from('lote_eventos').insert({
+      lote_id: id, titulo: tituloMap[estado], descricao: `Estado atualizado para: ${estado}`
+    });
 
     res.json({ success: true, message: 'Lote atualizado com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/lote_eventos - Adicionar evento a um lote
 app.post('/api/lote_eventos', async (req, res) => {
   const { lote_id, titulo, descricao, tipo } = req.body;
-  if (!lote_id || !titulo)
-    return res.status(400).json({ error: 'lote_id e titulo são obrigatórios.' });
-
+  if (!lote_id || !titulo) return res.status(400).json({ error: 'lote_id e titulo são obrigatórios.' });
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('lote_id', sql.Int, parseInt(lote_id))
-      .input('titulo', sql.NVarChar, titulo)
-      .input('descricao', sql.NVarChar, descricao || null)
-      .input('tipo', sql.NVarChar, tipo || 'normal')
-      .query('INSERT INTO lote_eventos (lote_id, titulo, descricao, tipo) VALUES (@lote_id, @titulo, @descricao, @tipo)');
-
+    await supabase.from('lote_eventos').insert({
+      lote_id: parseInt(lote_id), titulo, descricao: descricao || null, tipo: tipo || 'normal'
+    });
     res.status(201).json({ success: true, message: 'Evento registado com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -927,32 +656,23 @@ app.post('/api/lote_eventos', async (req, res) => {
 //  PREÇOS DE MERCADO
 // ════════════════════════════════════════════════════════════
 
-// GET /api/precos - Listar preços
 app.get('/api/precos', async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query('SELECT * FROM precos_mercado ORDER BY atualizado_em DESC');
-
-    res.json({ precos: result.recordset });
+    const { data, error } = await supabase.from('precos_mercado').select('*').order('atualizado_em', { ascending: false });
+    if (error) throw error;
+    res.json({ precos: data || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/precos - Adicionar preço (admin)
 app.post('/api/precos', async (req, res) => {
   const { produto, preco_aoa_kg, preco_usd_kg, variacao_pct } = req.body;
-  if (!produto || !preco_aoa_kg)
-    return res.status(400).json({ error: 'Produto e preço AOA são obrigatórios.' });
-
+  if (!produto || !preco_aoa_kg) return res.status(400).json({ error: 'Produto e preço AOA são obrigatórios.' });
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('produto', sql.NVarChar, produto)
-      .input('preco_aoa_kg', sql.Decimal, parseFloat(preco_aoa_kg))
-      .input('preco_usd_kg', sql.Decimal, preco_usd_kg ? parseFloat(preco_usd_kg) : null)
-      .input('variacao_pct', sql.Decimal, variacao_pct ? parseFloat(variacao_pct) : null)
-      .query('INSERT INTO precos_mercado (produto, preco_aoa_kg, preco_usd_kg, variacao_pct) VALUES (@produto, @preco_aoa_kg, @preco_usd_kg, @variacao_pct)');
-
+    await supabase.from('precos_mercado').insert({
+      produto, preco_aoa_kg: parseFloat(preco_aoa_kg),
+      preco_usd_kg: preco_usd_kg ? parseFloat(preco_usd_kg) : null,
+      variacao_pct: variacao_pct ? parseFloat(variacao_pct) : null
+    });
     res.status(201).json({ success: true, message: 'Preço registado com sucesso.' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -961,177 +681,82 @@ app.post('/api/precos', async (req, res) => {
 //  PROJECTOS
 // ════════════════════════════════════════════════════════════
 
-// GET /api/projectos - Listar todos os projectos
 app.get('/api/projectos', async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query(`
-        SELECT 
-          id, nome, nome_en, descricao, descricao_en, fileira, 
-          investimento_usd, hectares, produtores_capacitar, capacidade_anual_t,
-          ano_inicio, ano_conclusao, status, coordenador, telefone_coordenador,
-          email_coordenador, provincias, tecnologias, mercados_exportacao,
-          logo_emoji, cor_tema, criado_em, actualizado_em
-        FROM projectos 
-        ORDER BY criado_em DESC
-      `);
-    
-    res.json({ projectos: result.recordset });
-  } catch (err) { 
-    res.status(500).json({ error: err.message }); 
-  }
+    const { data, error } = await supabase.from('projectos')
+      .select('id, nome, nome_en, descricao, descricao_en, fileira, investimento_usd, hectares, produtores_capacitar, capacidade_anual_t, ano_inicio, ano_conclusao, status, coordenador, telefone_coordenador, email_coordenador, provincias, tecnologias, mercados_exportacao, logo_emoji, cor_tema, criado_em, actualizado_em')
+      .order('criado_em', { ascending: false });
+    if (error) throw error;
+    res.json({ projectos: data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/projectos/fotos?projeto_id=1  (ou ?fileira=Café para compatibilidade)
+// Atenção: rotas específicas ANTES de /:id para evitar conflito
 app.get('/api/projectos/fotos', async (req, res) => {
   const { fileira, projeto_id } = req.query;
   try {
-    const pool = await poolPromise;
-    let result;
+    let query = supabase.from('projecto_fotos').select('id, url_path, filename, ordem').order('ordem').order('id');
     if (projeto_id) {
-      result = await pool.request()
-        .input('projeto_id', sql.Int, parseInt(projeto_id))
-        .query(`
-          SELECT pf.id, pf.url_path, pf.filename, pf.ordem
-          FROM projecto_fotos pf
-          WHERE pf.projecto_id = @projeto_id
-          ORDER BY pf.ordem, pf.id
-        `);
+      query = query.eq('projecto_id', parseInt(projeto_id));
     } else {
-      result = await pool.request()
-        .input('fileira', sql.NVarChar, fileira || '')
-        .query(`
-          SELECT pf.id, pf.url_path, pf.filename, pf.ordem
-          FROM projecto_fotos pf
-          INNER JOIN projectos p ON pf.projecto_id = p.id
-          WHERE p.fileira = @fileira
-          ORDER BY pf.ordem, pf.id
-        `);
+      const { data: projs } = await supabase.from('projectos').select('id').eq('fileira', fileira || '');
+      const ids = (projs || []).map(p => p.id);
+      if (ids.length === 0) return res.json({ fotos: [] });
+      query = query.in('projecto_id', ids);
     }
-    res.json({ fotos: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ fotos: data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/projectos/estatisticas - Estatísticas dos projectos
 app.get('/api/projectos/estatisticas', async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query(`
-        SELECT
-          COUNT(*) as total_projectos,
-          SUM(investimento_usd) as investimento_total,
-          SUM(hectares) as hectares_total,
-          SUM(produtores_capacitar) as produtores_total,
-          SUM(capacidade_anual_t) as capacidade_total,
-          COUNT(CASE WHEN status = 'em_execucao' THEN 1 END) as projectos_em_execucao,
-          COUNT(CASE WHEN status = 'concluido' THEN 1 END) as projectos_concluidos,
-          COUNT(CASE WHEN status = 'em_planeamento' THEN 1 END) as projectos_em_planeamento
-        FROM projectos
-      `);
-
-    // Projectos por fileira
-    const byFileiraResult = await pool.request()
-      .query(`
-        SELECT fileira, COUNT(*) as count, SUM(investimento_usd) as investimento
-        FROM projectos
-        GROUP BY fileira
-        ORDER BY count DESC
-      `);
-
-    res.json({
-      ...result.recordset[0],
-      por_fileira: byFileiraResult.recordset
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const [stats, porFileira] = await Promise.all([
+      supabase.rpc('get_projectos_estatisticas'),
+      supabase.rpc('get_projectos_por_fileira'),
+    ]);
+    res.json({ ...(stats.data?.[0] || {}), por_fileira: porFileira.data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/projectos/:id - Obter detalhes de um projecto
 app.get('/api/projectos/:id', async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    
-    // Dados principais do projecto
-    const projectResult = await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .query(`
-        SELECT 
-          id, nome, nome_en, descricao, descricao_en, fileira, 
-          investimento_usd, hectares, produtores_capacitar, capacidade_anual_t,
-          ano_inicio, ano_conclusao, status, coordenador, telefone_coordenador,
-          email_coordenador, provincias, tecnologias, mercados_exportacao,
-          logo_emoji, cor_tema, criado_em, actualizado_em
-        FROM projectos 
-        WHERE id = @id
-      `);
-    
-    if (projectResult.recordset.length === 0) {
+    const [projectRes, phasesRes, invRes, updRes] = await Promise.all([
+      supabase.from('projectos')
+        .select('id, nome, nome_en, descricao, descricao_en, fileira, investimento_usd, hectares, produtores_capacitar, capacidade_anual_t, ano_inicio, ano_conclusao, status, coordenador, telefone_coordenador, email_coordenador, provincias, tecnologias, mercados_exportacao, logo_emoji, cor_tema, criado_em, actualizado_em')
+        .eq('id', id).single(),
+      supabase.from('projeto_fases')
+        .select('id, nome_fase, nome_fase_en, descricao, descricao_en, data_inicio, data_fim, progresso_pct, status')
+        .eq('projeto_id', id).order('data_inicio'),
+      supabase.from('projeto_investimentos')
+        .select('categoria, categoria_en, valor_usd, fornecedor, descricao, data_investimento')
+        .eq('projeto_id', id).order('data_investimento', { ascending: false }),
+      supabase.from('projeto_actualizacoes')
+        .select('titulo, titulo_en, descricao, descricao_en, tipo_actualizacao, data_publicacao, autor')
+        .eq('projeto_id', id).order('data_publicacao', { ascending: false }),
+    ]);
+
+    if (projectRes.error || !projectRes.data)
       return res.status(404).json({ error: 'Projecto não encontrado.' });
-    }
-    
-    const project = projectResult.recordset[0];
-    
-    // Fases do projecto
-    const phasesResult = await pool.request()
-      .input('projeto_id', sql.Int, parseInt(id))
-      .query(`
-        SELECT id, nome_fase, nome_fase_en, descricao, descricao_en, 
-               data_inicio, data_fim, progresso_pct, status
-        FROM projeto_fases 
-        WHERE projeto_id = @projeto_id 
-        ORDER BY data_inicio ASC
-      `);
-    
-    // Investimentos do projecto
-    const investmentsResult = await pool.request()
-      .input('projeto_id', sql.Int, parseInt(id))
-      .query(`
-        SELECT categoria, categoria_en, valor_usd, fornecedor, 
-               descricao, data_investimento
-        FROM projeto_investimentos 
-        WHERE projeto_id = @projeto_id 
-        ORDER BY data_investimento DESC
-      `);
-    
-    // Actualizações do projecto
-    const updatesResult = await pool.request()
-      .input('projeto_id', sql.Int, parseInt(id))
-      .query(`
-        SELECT titulo, titulo_en, descricao, descricao_en, 
-               tipo_actualizacao, data_publicacao, autor
-        FROM projeto_actualizacoes 
-        WHERE projeto_id = @projeto_id 
-        ORDER BY data_publicacao DESC
-      `);
-    
+
     res.json({
-      project,
-      phases: phasesResult.recordset,
-      investments: investmentsResult.recordset,
-      updates: updatesResult.recordset
+      project: projectRes.data,
+      phases: phasesRes.data || [],
+      investments: invRes.data || [],
+      updates: updRes.data || [],
     });
-  } catch (err) { 
-    res.status(500).json({ error: err.message }); 
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-
-// ── Serve static files ───────────────────────────────────────
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ── Static files ─────────────────────────────────────────────
 app.use(express.static(path.join(__dirname)));
-
-// ── Catch-all → devolve o HTML ────────────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'instituto_cafe_angola.html'));
 });
 
 // ── Arranque ─────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀  Servidor INCA em http://localhost:${PORT}`);
+  console.log(`🚀  Servidor INCA (Supabase) em http://localhost:${PORT}`);
 });

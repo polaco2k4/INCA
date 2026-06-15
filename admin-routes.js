@@ -1,25 +1,11 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const { sql, poolPromise } = require('./db');
+const express  = require('express');
+const multer   = require('multer');
+const path     = require('path');
+const supabase = require('./supabase');
 
-// ── Upload de Fotos ──────────────────────────────────────────
-const uploadStorage = multer.diskStorage({
-  destination(req, file, cb) {
-    const dir = path.join(__dirname, 'uploads', 'projectos', String(req.params.id));
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename(req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `foto_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
-  }
-});
+// multer em memória — o buffer vai directo para Supabase Storage
 const uploadFotos = multer({
-  storage: uploadStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter(req, file, cb) {
     if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) cb(null, true);
@@ -28,28 +14,29 @@ const uploadFotos = multer({
 });
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 
-// ── Middleware de Autenticação ───────────────────────────────
-function authMiddleware(req, res, next) {
+// ── Middleware de Autenticação (Supabase Auth) ───────────────
+async function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Token não fornecido.' });
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.admin = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Token inválido ou expirado.' });
-  }
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return res.status(401).json({ error: 'Token inválido ou expirado.' });
+
+  req.admin = {
+    id:    user.app_metadata?.db_id,
+    nivel: user.app_metadata?.nivel,
+    email: user.email,
+    authId: user.id,
+  };
+  next();
 }
 
 // ── Middleware de Nível de Acesso ────────────────────────────
 function requireLevel(...levels) {
   return (req, res, next) => {
-    if (!levels.includes(req.admin.nivel)) {
+    if (!levels.includes(req.admin.nivel))
       return res.status(403).json({ error: 'Permissão insuficiente.' });
-    }
     next();
   };
 }
@@ -57,16 +44,13 @@ function requireLevel(...levels) {
 // ── Helper: Registar Log ─────────────────────────────────────
 async function logAction(admin_id, acao, entidade, entidade_id, detalhes, ip) {
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('admin_id', sql.Int, admin_id)
-      .input('acao', sql.NVarChar, acao)
-      .input('entidade', sql.NVarChar, entidade)
-      .input('entidade_id', sql.Int, entidade_id || null)
-      .input('detalhes', sql.NVarChar, detalhes || null)
-      .input('ip_address', sql.NVarChar, ip || null)
-      .query(`INSERT INTO admin_logs (admin_id, acao, entidade, entidade_id, detalhes, ip_address)
-              VALUES (@admin_id, @acao, @entidade, @entidade_id, @detalhes, @ip_address)`);
+    await supabase.from('admin_logs').insert({
+      admin_id: admin_id || null,
+      acao, entidade,
+      entidade_id: entidade_id || null,
+      detalhes: detalhes || null,
+      ip_address: ip || null,
+    });
   } catch (err) {
     console.error('Erro ao registar log:', err.message);
   }
@@ -82,1568 +66,891 @@ router.post('/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email e password são obrigatórios.' });
 
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('email', sql.NVarChar, email.trim().toLowerCase())
-      .query('SELECT id, nome, email, password_hash, nivel, activo FROM administradores WHERE email = @email');
+    const emailLower = email.trim().toLowerCase();
 
-    if (result.recordset.length === 0)
-      return res.status(401).json({ error: 'Email não encontrado.' });
+    // 1 — Verificar DB primeiro (client ainda usa service_role antes do signIn)
+    const { data: admin, error: dbErr } = await supabase.from('administradores')
+      .select('id, nome, email, nivel, activo')
+      .eq('email', emailLower)
+      .single();
 
-    const admin = result.recordset[0];
-    if (!admin.activo)
-      return res.status(401).json({ error: 'Conta desactivada.' });
+    if (dbErr || !admin) return res.status(401).json({ error: 'Email ou password incorrectos.' });
+    if (!admin.activo)   return res.status(401).json({ error: 'Conta desactivada.' });
 
-    const ok = await bcrypt.compare(password, admin.password_hash);
-    if (!ok) return res.status(401).json({ error: 'Password incorrecta.' });
+    // 2 — Autenticar via Supabase Auth
+    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+      email: emailLower,
+      password,
+    });
 
-    // Atualizar último acesso
-    await pool.request()
-      .input('id', sql.Int, admin.id)
-      .query('UPDATE administradores SET ultimo_acesso = GETDATE() WHERE id = @id');
+    if (authErr) return res.status(401).json({ error: 'Email ou password incorrectos.' });
 
-    // Gerar token JWT
-    const token = jwt.sign(
-      { id: admin.id, email: admin.email, nivel: admin.nivel },
-      JWT_SECRET,
-      { expiresIn: '8h' }
-    );
+    // 3 — Sincronizar app_metadata (auth.admin usa sempre service_role)
+    await supabase.auth.admin.updateUserById(authData.user.id, {
+      app_metadata: { db_id: admin.id, nivel: admin.nivel }
+    });
 
-    await logAction(admin.id, 'LOGIN', 'administrador', admin.id, null, req.ip);
+    // 4 — Actualizar último acesso e log (via auth.admin para evitar conflito de sessão)
+    await supabase.auth.admin.updateUserById(authData.user.id, {
+      app_metadata: { db_id: admin.id, nivel: admin.nivel, ultimo_acesso: new Date().toISOString() }
+    });
+
+    logAction(admin.id, 'LOGIN', 'administrador', admin.id, null, req.ip).catch(() => {});
 
     res.json({
       success: true,
-      token,
-      admin: { id: admin.id, nome: admin.nome, email: admin.email, nivel: admin.nivel }
+      token: authData.session.access_token,
+      admin: { id: admin.id, nome: admin.nome, email: admin.email, nivel: admin.nivel },
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // GET /api/admin/me
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, req.admin.id)
-      .query('SELECT id, nome, email, nivel, criado_em, ultimo_acesso FROM administradores WHERE id = @id');
+    const { data, error } = await supabase.from('administradores')
+      .select('id, nome, email, nivel, criado_em, ultimo_acesso')
+      .eq('id', req.admin.id)
+      .single();
 
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Administrador não encontrado.' });
-
-    res.json(result.recordset[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    if (error || !data) return res.status(404).json({ error: 'Administrador não encontrado.' });
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
 //  GESTÃO DE PRODUTORES
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/produtores/pendentes
 router.get('/produtores/pendentes', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query(`SELECT id, nome, nbi, telefone, email, provincia, municipio, fileira, 
-                     area_ha, tipo_produtor, criado_em
-              FROM produtores 
-              WHERE activo = 0 
-              ORDER BY criado_em DESC`);
-
-    res.json({ produtores: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('produtores')
+      .select('id, nome, nbi, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor, criado_em')
+      .eq('activo', false)
+      .order('criado_em', { ascending: false });
+    if (error) throw error;
+    res.json({ produtores: data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/admin/produtores
 router.get('/produtores', authMiddleware, async (req, res) => {
   const { activo, fileira, provincia, limit = 100, offset = 0 } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    let query = 'SELECT id, nome, nbi, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor, activo, criado_em FROM produtores WHERE 1=1';
-    const request = pool.request();
+    let query = supabase.from('produtores')
+      .select('id, nome, nbi, telefone, email, provincia, municipio, fileira, area_ha, tipo_produtor, activo, criado_em')
+      .order('criado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
-    if (activo !== undefined) {
-      query += ' AND activo = @activo';
-      request.input('activo', sql.Bit, activo === 'true' || activo === '1' ? 1 : 0);
-    }
-    if (fileira) {
-      query += ' AND fileira = @fileira';
-      request.input('fileira', sql.NVarChar, fileira);
-    }
-    if (provincia) {
-      query += ' AND provincia = @provincia';
-      request.input('provincia', sql.NVarChar, provincia);
-    }
+    if (activo !== undefined) query = query.eq('activo', activo === 'true' || activo === '1');
+    if (fileira)              query = query.eq('fileira', fileira);
+    if (provincia)            query = query.eq('provincia', provincia);
 
-    query += ' ORDER BY criado_em DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
-    request.input('offset', sql.Int, parseInt(offset));
-    request.input('limit', sql.Int, parseInt(limit));
-
-    const result = await request.query(query);
-    res.json({ produtores: result.recordset, total: result.recordset.length });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ produtores: data || [], total: data?.length || 0 });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/produtores/:id/aprovar
 router.put('/produtores/:id/aprovar', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query('UPDATE produtores SET activo = 1, actualizado_em = GETDATE() WHERE id = @id; SELECT * FROM produtores WHERE id = @id');
+    const { data, error } = await supabase.from('produtores')
+      .update({ activo: true, actualizado_em: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
 
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Produtor não encontrado.' });
+    if (error || !data) return res.status(404).json({ error: 'Produtor não encontrado.' });
 
-    const produtor = result.recordset[0];
-    await logAction(req.admin.id, 'APROVAR', 'produtor', parseInt(id), `Produtor ${produtor.nome} (${produtor.nbi}) aprovado`, req.ip);
-
-    res.json({ success: true, message: 'Produtor aprovado com sucesso.', produtor });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    await logAction(req.admin.id, 'APROVAR', 'produtor', id, `Produtor ${data.nome} (${data.nbi}) aprovado`, req.ip);
+    res.json({ success: true, message: 'Produtor aprovado com sucesso.', produtor: data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/produtores/:id/rejeitar
 router.put('/produtores/:id/rejeitar', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   const { motivo } = req.body;
-  
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query('DELETE FROM produtores WHERE id = @id AND activo = 0; SELECT @@ROWCOUNT as deleted');
+    const { data: existing } = await supabase.from('produtores')
+      .select('id, auth_user_id').eq('id', id).eq('activo', false).maybeSingle();
 
-    if (result.recordset[0].deleted === 0)
-      return res.status(404).json({ error: 'Produtor não encontrado ou já activo.' });
+    if (!existing) return res.status(404).json({ error: 'Produtor não encontrado ou já activo.' });
 
-    await logAction(req.admin.id, 'REJEITAR', 'produtor', parseInt(id), motivo || 'Sem motivo especificado', req.ip);
+    if (existing.auth_user_id) {
+      await supabase.auth.admin.deleteUser(existing.auth_user_id);
+    }
+    await supabase.from('produtores').delete().eq('id', id);
 
+    await logAction(req.admin.id, 'REJEITAR', 'produtor', id, motivo || 'Sem motivo especificado', req.ip);
     res.json({ success: true, message: 'Produtor rejeitado e removido.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/produtores/:id/desactivar
 router.put('/produtores/:id/desactivar', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, id)
-      .query('UPDATE produtores SET activo = 0 WHERE id = @id');
-
-    await logAction(req.admin.id, 'DESACTIVAR', 'produtor', parseInt(id), null, req.ip);
-
+    await supabase.from('produtores').update({ activo: false }).eq('id', id);
+    await logAction(req.admin.id, 'DESACTIVAR', 'produtor', id, null, req.ip);
     res.json({ success: true, message: 'Produtor desactivado.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
 //  GESTÃO DE CERTIFICADOS
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/certificados/pendentes
 router.get('/certificados/pendentes', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query(`SELECT c.*, p.nome as produtor_nome, p.nbi as produtor_nbi
-              FROM certificados c
-              LEFT JOIN produtores p ON c.produtor_id = p.id
-              WHERE c.estado = 'pendente'
-              ORDER BY c.criado_em ASC`);
-
-    res.json({ certificados: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('certificados')
+      .select('*, produtores(nome, nbi)')
+      .eq('estado', 'pendente')
+      .order('criado_em', { ascending: true });
+    if (error) throw error;
+    const certs = (data || []).map(({ produtores: p, ...c }) => ({ ...c, produtor_nome: p?.nome, produtor_nbi: p?.nbi }));
+    res.json({ certificados: certs });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/admin/certificados
 router.get('/certificados', authMiddleware, async (req, res) => {
   const { estado, limit = 100, offset = 0 } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    let query = `SELECT c.*, p.nome as produtor_nome, p.nbi as produtor_nbi
-                 FROM certificados c
-                 LEFT JOIN produtores p ON c.produtor_id = p.id
-                 WHERE 1=1`;
-    const request = pool.request();
-
-    if (estado) {
-      query += ' AND c.estado = @estado';
-      request.input('estado', sql.NVarChar, estado);
-    }
-
-    query += ' ORDER BY c.criado_em DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
-    request.input('offset', sql.Int, parseInt(offset));
-    request.input('limit', sql.Int, parseInt(limit));
-
-    const result = await request.query(query);
-    res.json({ certificados: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    let query = supabase.from('certificados')
+      .select('*, produtores(nome, nbi)')
+      .order('criado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+    if (estado) query = query.eq('estado', estado);
+    const { data, error } = await query;
+    if (error) throw error;
+    const certs = (data || []).map(({ produtores: p, ...c }) => ({ ...c, produtor_nome: p?.nome, produtor_nbi: p?.nbi }));
+    res.json({ certificados: certs });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/admin/certificados/:referencia - Detalhes de um certificado
 router.get('/certificados/:referencia', authMiddleware, async (req, res) => {
-  const { referencia } = req.params;
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('referencia', sql.NVarChar, referencia)
-      .query(`SELECT c.*, p.nome as produtor_nome, p.nbi as produtor_nbi
-              FROM certificados c
-              LEFT JOIN produtores p ON c.produtor_id = p.id
-              WHERE c.referencia = @referencia`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Certificado não encontrado.' });
-
-    res.json({ certificado: result.recordset[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('certificados')
+      .select('*, produtores(nome, nbi)')
+      .eq('referencia', req.params.referencia)
+      .single();
+    if (error || !data) return res.status(404).json({ error: 'Certificado não encontrado.' });
+    const { produtores: p, ...cert } = data;
+    res.json({ certificado: { ...cert, produtor_nome: p?.nome, produtor_nbi: p?.nbi } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/certificados/:id/emitir
 router.put('/certificados/:id/emitir', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   const { observacoes } = req.body;
-  
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .input('observacoes', sql.NVarChar, observacoes || null)
-      .query(`UPDATE certificados SET estado = 'emitido', observacoes = @observacoes WHERE id = @id;
-              SELECT * FROM certificados WHERE id = @id`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Certificado não encontrado.' });
-
-    const cert = result.recordset[0];
-    await logAction(req.admin.id, 'EMITIR', 'certificado', parseInt(id), `Certificado ${cert.referencia} emitido`, req.ip);
-
-    res.json({ success: true, message: 'Certificado emitido.', certificado: cert });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('certificados')
+      .update({ estado: 'emitido', observacoes: observacoes || null })
+      .eq('id', id).select().single();
+    if (error || !data) return res.status(404).json({ error: 'Certificado não encontrado.' });
+    await logAction(req.admin.id, 'EMITIR', 'certificado', id, `Certificado ${data.referencia} emitido`, req.ip);
+    res.json({ success: true, message: 'Certificado emitido.', certificado: data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/certificados/:id/rejeitar
 router.put('/certificados/:id/rejeitar', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   const { observacoes } = req.body;
-  
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .input('observacoes', sql.NVarChar, observacoes || 'Rejeitado')
-      .query(`UPDATE certificados SET estado = 'rejeitado', observacoes = @observacoes WHERE id = @id;
-              SELECT * FROM certificados WHERE id = @id`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Certificado não encontrado.' });
-
-    const cert = result.recordset[0];
-    await logAction(req.admin.id, 'REJEITAR', 'certificado', parseInt(id), observacoes, req.ip);
-
-    res.json({ success: true, message: 'Certificado rejeitado.', certificado: cert });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('certificados')
+      .update({ estado: 'rejeitado', observacoes: observacoes || 'Rejeitado' })
+      .eq('id', id).select().single();
+    if (error || !data) return res.status(404).json({ error: 'Certificado não encontrado.' });
+    await logAction(req.admin.id, 'REJEITAR', 'certificado', id, observacoes, req.ip);
+    res.json({ success: true, message: 'Certificado rejeitado.', certificado: data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
 //  GESTÃO DE PEDIDOS DE APOIO
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/apoios/pendentes
 router.get('/apoios/pendentes', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query(`SELECT a.*, p.nome as produtor_nome, p.nbi as produtor_nbi
-              FROM pedidos_apoio a
-              LEFT JOIN produtores p ON a.produtor_id = p.id
-              WHERE a.estado = 'em_analise'
-              ORDER BY a.criado_em ASC`);
-
-    res.json({ apoios: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('pedidos_apoio')
+      .select('*, produtores(nome, nbi)')
+      .eq('estado', 'em_analise')
+      .order('criado_em', { ascending: true });
+    if (error) throw error;
+    const apoios = (data || []).map(({ produtores: p, ...a }) => ({ ...a, produtor_nome: p?.nome, produtor_nbi: p?.nbi }));
+    res.json({ apoios });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/admin/apoios
 router.get('/apoios', authMiddleware, async (req, res) => {
   const { estado, limit = 100, offset = 0 } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    let query = `SELECT a.*, p.nome as produtor_nome, p.nbi as produtor_nbi
-                 FROM pedidos_apoio a
-                 LEFT JOIN produtores p ON a.produtor_id = p.id
-                 WHERE 1=1`;
-    const request = pool.request();
-
-    if (estado) {
-      query += ' AND a.estado = @estado';
-      request.input('estado', sql.NVarChar, estado);
-    }
-
-    query += ' ORDER BY a.criado_em DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
-    request.input('offset', sql.Int, parseInt(offset));
-    request.input('limit', sql.Int, parseInt(limit));
-
-    const result = await request.query(query);
-    res.json({ apoios: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    let query = supabase.from('pedidos_apoio')
+      .select('*, produtores(nome, nbi)')
+      .order('criado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+    if (estado) query = query.eq('estado', estado);
+    const { data, error } = await query;
+    if (error) throw error;
+    const apoios = (data || []).map(({ produtores: p, ...a }) => ({ ...a, produtor_nome: p?.nome, produtor_nbi: p?.nbi }));
+    res.json({ apoios });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/apoios/:id/aprovar
 router.put('/apoios/:id/aprovar', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query(`UPDATE pedidos_apoio SET estado = 'aprovado' WHERE id = @id;
-              SELECT * FROM pedidos_apoio WHERE id = @id`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Pedido não encontrado.' });
-
-    const apoio = result.recordset[0];
-    await logAction(req.admin.id, 'APROVAR', 'pedido_apoio', parseInt(id), `Pedido ${apoio.referencia} aprovado`, req.ip);
-
-    res.json({ success: true, message: 'Pedido de apoio aprovado.', apoio });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('pedidos_apoio')
+      .update({ estado: 'aprovado' }).eq('id', id).select().single();
+    if (error || !data) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    await logAction(req.admin.id, 'APROVAR', 'pedido_apoio', id, `Pedido ${data.referencia} aprovado`, req.ip);
+    res.json({ success: true, message: 'Pedido de apoio aprovado.', apoio: data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/apoios/:id/rejeitar
 router.put('/apoios/:id/rejeitar', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query(`UPDATE pedidos_apoio SET estado = 'rejeitado' WHERE id = @id;
-              SELECT * FROM pedidos_apoio WHERE id = @id`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Pedido não encontrado.' });
-
-    const apoio = result.recordset[0];
-    await logAction(req.admin.id, 'REJEITAR', 'pedido_apoio', parseInt(id), `Pedido ${apoio.referencia} rejeitado`, req.ip);
-
-    res.json({ success: true, message: 'Pedido de apoio rejeitado.', apoio });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('pedidos_apoio')
+      .update({ estado: 'rejeitado' }).eq('id', id).select().single();
+    if (error || !data) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    await logAction(req.admin.id, 'REJEITAR', 'pedido_apoio', id, `Pedido ${data.referencia} rejeitado`, req.ip);
+    res.json({ success: true, message: 'Pedido de apoio rejeitado.', apoio: data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
 //  DASHBOARD & ESTATÍSTICAS
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/dashboard
 router.get('/dashboard', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    
-    const stats = await pool.request().query(`
-      SELECT
-        (SELECT COUNT(*) FROM produtores WHERE activo = 0) as produtores_pendentes,
-        (SELECT COUNT(*) FROM produtores WHERE activo = 1) as produtores_activos,
-        (SELECT COUNT(*) FROM certificados WHERE estado = 'pendente') as certificados_pendentes,
-        (SELECT COUNT(*) FROM certificados WHERE estado = 'emitido') as certificados_emitidos,
-        (SELECT COUNT(*) FROM pedidos_apoio WHERE estado = 'em_analise') as apoios_pendentes,
-        (SELECT COUNT(*) FROM pedidos_apoio WHERE estado = 'aprovado') as apoios_aprovados,
-        (SELECT COUNT(*) FROM lotes) as total_lotes,
-        (SELECT SUM(quantidade_kg) FROM lotes) as total_kg_producao
-    `);
-
-    res.json({ stats: stats.recordset[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.rpc('get_dashboard_stats');
+    if (error) throw error;
+    res.json({ stats: data?.[0] || {} });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/admin/logs
 router.get('/logs', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
   const { limit = 50, offset = 0 } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('offset', sql.Int, parseInt(offset))
-      .input('limit', sql.Int, parseInt(limit))
-      .query(`SELECT l.*, a.nome as admin_nome, a.email as admin_email
-              FROM admin_logs l
-              JOIN administradores a ON l.admin_id = a.id
-              ORDER BY l.criado_em DESC
-              OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`);
-
-    res.json({ logs: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('admin_logs')
+      .select('*, administradores(nome, email)')
+      .order('criado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+    if (error) throw error;
+    const logs = (data || []).map(({ administradores: a, ...l }) => ({
+      ...l, admin_nome: a?.nome, admin_email: a?.email
+    }));
+    res.json({ logs });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  GESTÃO DE CONTEÚDO - ARTIGOS
+//  GESTÃO DE CONTEÚDO — ARTIGOS
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/artigos
 router.get('/artigos', authMiddleware, async (req, res) => {
   const { estado, categoria_id, destaque, limit = 50, offset = 0 } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    let query = `SELECT a.*, c.nome as categoria_nome, ad.nome as autor_nome
-                 FROM artigos a
-                 LEFT JOIN categorias_conteudo c ON a.categoria_id = c.id
-                 LEFT JOIN administradores ad ON a.autor_id = ad.id
-                 WHERE 1=1`;
-    const request = pool.request();
+    let query = supabase.from('artigos')
+      .select('*, categorias_conteudo(nome), administradores(nome)')
+      .order('criado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
-    if (estado) {
-      query += ' AND a.estado = @estado';
-      request.input('estado', sql.NVarChar, estado);
-    }
-    if (categoria_id) {
-      query += ' AND a.categoria_id = @categoria_id';
-      request.input('categoria_id', sql.Int, parseInt(categoria_id));
-    }
-    if (destaque !== undefined) {
-      query += ' AND a.destaque = @destaque';
-      request.input('destaque', sql.Bit, destaque === 'true' || destaque === '1' ? 1 : 0);
-    }
+    if (estado)      query = query.eq('estado', estado);
+    if (categoria_id) query = query.eq('categoria_id', parseInt(categoria_id));
+    if (destaque !== undefined) query = query.eq('destaque', destaque === 'true' || destaque === '1');
 
-    query += ' ORDER BY a.criado_em DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
-    request.input('offset', sql.Int, parseInt(offset));
-    request.input('limit', sql.Int, parseInt(limit));
-
-    const result = await request.query(query);
-    res.json({ artigos: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await query;
+    if (error) throw error;
+    const artigos = (data || []).map(({ categorias_conteudo: cat, administradores: aut, ...a }) => ({
+      ...a, categoria_nome: cat?.nome, autor_nome: aut?.nome,
+    }));
+    res.json({ artigos });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/admin/artigos/:id
 router.get('/artigos/:id', authMiddleware, async (req, res) => {
-  const { id } = req.params;
-  
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query(`SELECT a.*, c.nome as categoria_nome, ad.nome as autor_nome
-              FROM artigos a
-              LEFT JOIN categorias_conteudo c ON a.categoria_id = c.id
-              LEFT JOIN administradores ad ON a.autor_id = ad.id
-              WHERE a.id = @id`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Artigo não encontrado.' });
-
-    res.json(result.recordset[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('artigos')
+      .select('*, categorias_conteudo(nome), administradores(nome)')
+      .eq('id', parseInt(req.params.id))
+      .single();
+    if (error || !data) return res.status(404).json({ error: 'Artigo não encontrado.' });
+    const { categorias_conteudo: cat, administradores: aut, ...artigo } = data;
+    res.json({ ...artigo, categoria_nome: cat?.nome, autor_nome: aut?.nome });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/admin/artigos
 router.post('/artigos', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { titulo, titulo_en, slug, resumo, resumo_en, conteudo, conteudo_en, categoria_id, imagem_destaque, tags, estado, destaque } = req.body;
-  
-  if (!titulo || !conteudo) 
-    return res.status(400).json({ error: 'Título e conteúdo são obrigatórios.' });
-  
-  if (!titulo_en || !conteudo_en) 
-    return res.status(400).json({ error: 'Título e conteúdo em inglês são obrigatórios.' });
-  
+  const { titulo, titulo_en, slug, resumo, resumo_en, conteudo, conteudo_en,
+          categoria_id, imagem_destaque, tags, estado, destaque } = req.body;
+
+  if (!titulo || !conteudo)       return res.status(400).json({ error: 'Título e conteúdo são obrigatórios.' });
+  if (!titulo_en || !conteudo_en) return res.status(400).json({ error: 'Título e conteúdo em inglês são obrigatórios.' });
+
   try {
-    const pool = await poolPromise;
     const slugFinal = slug || titulo.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    
-    const result = await pool.request()
-      .input('titulo', sql.NVarChar, titulo)
-      .input('titulo_en', sql.NVarChar, titulo_en)
-      .input('slug', sql.NVarChar, slugFinal)
-      .input('resumo', sql.NVarChar, resumo || null)
-      .input('resumo_en', sql.NVarChar, resumo_en || null)
-      .input('conteudo', sql.NVarChar, conteudo)
-      .input('conteudo_en', sql.NVarChar, conteudo_en)
-      .input('categoria_id', sql.Int, categoria_id || null)
-      .input('autor_id', sql.Int, req.admin.id)
-      .input('imagem_destaque', sql.NVarChar, imagem_destaque || null)
-      .input('tags', sql.NVarChar, tags || null)
-      .input('estado', sql.NVarChar, estado || 'rascunho')
-      .input('destaque', sql.Bit, destaque ? 1 : 0)
-      .input('publicado_em', sql.DateTime2, estado === 'publicado' ? new Date() : null)
-      .query(`INSERT INTO artigos (titulo, titulo_en, slug, resumo, resumo_en, conteudo, conteudo_en, categoria_id, autor_id, imagem_destaque, tags, estado, destaque, publicado_em)
-              OUTPUT INSERTED.*
-              VALUES (@titulo, @titulo_en, @slug, @resumo, @resumo_en, @conteudo, @conteudo_en, @categoria_id, @autor_id, @imagem_destaque, @tags, @estado, @destaque, @publicado_em)`);
-
-    const artigo = result.recordset[0];
+    const { data: artigo, error } = await supabase.from('artigos').insert({
+      titulo, titulo_en, slug: slugFinal, resumo: resumo || null, resumo_en: resumo_en || null,
+      conteudo, conteudo_en, categoria_id: categoria_id || null, autor_id: req.admin.id,
+      imagem_destaque: imagem_destaque || null, tags: tags || null,
+      estado: estado || 'rascunho', destaque: destaque ? true : false,
+      publicado_em: estado === 'publicado' ? new Date().toISOString() : null,
+    }).select().single();
+    if (error) throw error;
     await logAction(req.admin.id, 'CRIAR', 'artigo', artigo.id, `Artigo "${titulo}" criado`, req.ip);
-
     res.status(201).json({ success: true, artigo });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/artigos/:id
 router.put('/artigos/:id', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
-  const { titulo, titulo_en, slug, resumo, resumo_en, conteudo, conteudo_en, categoria_id, imagem_destaque, tags, estado, destaque } = req.body;
-  
+  const id = parseInt(req.params.id);
+  const { titulo, titulo_en, slug, resumo, resumo_en, conteudo, conteudo_en,
+          categoria_id, imagem_destaque, tags, estado, destaque } = req.body;
   try {
-    const pool = await poolPromise;
-    const request = pool.request().input('id', sql.Int, id);
-    
-    let updates = [];
-    if (titulo !== undefined) {
-      updates.push('titulo = @titulo');
-      request.input('titulo', sql.NVarChar, titulo);
-    }
-    if (titulo_en !== undefined) {
-      updates.push('titulo_en = @titulo_en');
-      request.input('titulo_en', sql.NVarChar, titulo_en);
-    }
-    if (slug !== undefined) {
-      updates.push('slug = @slug');
-      request.input('slug', sql.NVarChar, slug);
-    }
-    if (resumo !== undefined) {
-      updates.push('resumo = @resumo');
-      request.input('resumo', sql.NVarChar, resumo);
-    }
-    if (resumo_en !== undefined) {
-      updates.push('resumo_en = @resumo_en');
-      request.input('resumo_en', sql.NVarChar, resumo_en);
-    }
-    if (conteudo !== undefined) {
-      updates.push('conteudo = @conteudo');
-      request.input('conteudo', sql.NVarChar, conteudo);
-    }
-    if (conteudo_en !== undefined) {
-      updates.push('conteudo_en = @conteudo_en');
-      request.input('conteudo_en', sql.NVarChar, conteudo_en);
-    }
-    if (categoria_id !== undefined) {
-      updates.push('categoria_id = @categoria_id');
-      request.input('categoria_id', sql.Int, categoria_id || null);
-    }
-    if (imagem_destaque !== undefined) {
-      updates.push('imagem_destaque = @imagem_destaque');
-      request.input('imagem_destaque', sql.NVarChar, imagem_destaque);
-    }
-    if (tags !== undefined) {
-      updates.push('tags = @tags');
-      request.input('tags', sql.NVarChar, tags);
-    }
+    const updates = { actualizado_em: new Date().toISOString() };
+    if (titulo            !== undefined) updates.titulo            = titulo;
+    if (titulo_en         !== undefined) updates.titulo_en         = titulo_en;
+    if (slug              !== undefined) updates.slug              = slug;
+    if (resumo            !== undefined) updates.resumo            = resumo;
+    if (resumo_en         !== undefined) updates.resumo_en         = resumo_en;
+    if (conteudo          !== undefined) updates.conteudo          = conteudo;
+    if (conteudo_en       !== undefined) updates.conteudo_en       = conteudo_en;
+    if (categoria_id      !== undefined) updates.categoria_id      = categoria_id || null;
+    if (imagem_destaque   !== undefined) updates.imagem_destaque   = imagem_destaque;
+    if (tags              !== undefined) updates.tags              = tags;
+    if (destaque          !== undefined) updates.destaque          = Boolean(destaque);
     if (estado !== undefined) {
-      updates.push('estado = @estado');
-      request.input('estado', sql.NVarChar, estado);
-      if (estado === 'publicado') {
-        updates.push('publicado_em = GETDATE()');
-      }
+      updates.estado = estado;
+      if (estado === 'publicado') updates.publicado_em = new Date().toISOString();
     }
-    if (destaque !== undefined) {
-      updates.push('destaque = @destaque');
-      request.input('destaque', sql.Bit, destaque ? 1 : 0);
-    }
-    
-    updates.push('actualizado_em = GETDATE()');
-    
-    const result = await request.query(`UPDATE artigos SET ${updates.join(', ')} WHERE id = @id; SELECT * FROM artigos WHERE id = @id`);
 
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Artigo não encontrado.' });
-
-    const artigo = result.recordset[0];
-    await logAction(req.admin.id, 'EDITAR', 'artigo', parseInt(id), `Artigo "${artigo.titulo}" editado`, req.ip);
-
+    const { data: artigo, error } = await supabase.from('artigos')
+      .update(updates).eq('id', id).select().single();
+    if (error || !artigo) return res.status(404).json({ error: 'Artigo não encontrado.' });
+    await logAction(req.admin.id, 'EDITAR', 'artigo', id, `Artigo "${artigo.titulo}" editado`, req.ip);
     res.json({ success: true, artigo });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/admin/artigos/:id
 router.delete('/artigos/:id', authMiddleware, requireLevel('super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query('SELECT titulo FROM artigos WHERE id = @id; DELETE FROM artigos WHERE id = @id');
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Artigo não encontrado.' });
-
-    const titulo = result.recordset[0].titulo;
-    await logAction(req.admin.id, 'ELIMINAR', 'artigo', parseInt(id), `Artigo "${titulo}" eliminado`, req.ip);
-
+    const { data: artigo } = await supabase.from('artigos').select('titulo').eq('id', id).single();
+    if (!artigo) return res.status(404).json({ error: 'Artigo não encontrado.' });
+    await supabase.from('artigos').delete().eq('id', id);
+    await logAction(req.admin.id, 'ELIMINAR', 'artigo', id, `Artigo "${artigo.titulo}" eliminado`, req.ip);
     res.json({ success: true, message: 'Artigo eliminado.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  GESTÃO DE CONTEÚDO - CATEGORIAS
+//  GESTÃO DE CONTEÚDO — CATEGORIAS
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/categorias
 router.get('/categorias', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query('SELECT * FROM categorias_conteudo ORDER BY nome ASC');
-
-    res.json({ categorias: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('categorias_conteudo').select('*').order('nome');
+    if (error) throw error;
+    res.json({ categorias: data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/admin/categorias
 router.post('/categorias', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
   const { nome, slug, descricao } = req.body;
-  
   if (!nome) return res.status(400).json({ error: 'Nome é obrigatório.' });
-  
   try {
-    const pool = await poolPromise;
     const slugFinal = slug || nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    
-    const result = await pool.request()
-      .input('nome', sql.NVarChar, nome)
-      .input('slug', sql.NVarChar, slugFinal)
-      .input('descricao', sql.NVarChar, descricao || null)
-      .query(`INSERT INTO categorias_conteudo (nome, slug, descricao)
-              OUTPUT INSERTED.*
-              VALUES (@nome, @slug, @descricao)`);
-
-    await logAction(req.admin.id, 'CRIAR', 'categoria', result.recordset[0].id, `Categoria "${nome}" criada`, req.ip);
-
-    res.status(201).json({ success: true, categoria: result.recordset[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data: categoria, error } = await supabase.from('categorias_conteudo')
+      .insert({ nome, slug: slugFinal, descricao: descricao || null }).select().single();
+    if (error) throw error;
+    await logAction(req.admin.id, 'CRIAR', 'categoria', categoria.id, `Categoria "${nome}" criada`, req.ip);
+    res.status(201).json({ success: true, categoria });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  GESTÃO DE CONTEÚDO - ANÚNCIOS
+//  GESTÃO DE CONTEÚDO — ANÚNCIOS
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/anuncios
 router.get('/anuncios', authMiddleware, async (req, res) => {
   const { activo, tipo, limit = 50, offset = 0 } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    let query = `SELECT a.*, ad.nome as criado_por_nome
-                 FROM anuncios a
-                 LEFT JOIN administradores ad ON a.criado_por = ad.id
-                 WHERE 1=1`;
-    const request = pool.request();
-
-    if (activo !== undefined) {
-      query += ' AND a.activo = @activo';
-      request.input('activo', sql.Bit, activo === 'true' || activo === '1' ? 1 : 0);
-    }
-    if (tipo) {
-      query += ' AND a.tipo = @tipo';
-      request.input('tipo', sql.NVarChar, tipo);
-    }
-
-    query += ' ORDER BY a.criado_em DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
-    request.input('offset', sql.Int, parseInt(offset));
-    request.input('limit', sql.Int, parseInt(limit));
-
-    const result = await request.query(query);
-    res.json({ anuncios: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    let query = supabase.from('anuncios')
+      .select('*, administradores(nome)')
+      .order('criado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+    if (activo !== undefined) query = query.eq('activo', activo === 'true' || activo === '1');
+    if (tipo)                 query = query.eq('tipo', tipo);
+    const { data, error } = await query;
+    if (error) throw error;
+    const anuncios = (data || []).map(({ administradores: a, ...n }) => ({ ...n, criado_por_nome: a?.nome }));
+    res.json({ anuncios });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/admin/anuncios
 router.post('/anuncios', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
   const { titulo, titulo_en, mensagem, mensagem_en, tipo, link_url, link_texto, link_texto_en, activo, data_inicio, data_fim } = req.body;
-  
-  if (!titulo || !mensagem) 
-    return res.status(400).json({ error: 'Título e mensagem são obrigatórios.' });
-  
-  if (!titulo_en || !mensagem_en) 
-    return res.status(400).json({ error: 'Título e mensagem em inglês são obrigatórios.' });
-  
+  if (!titulo || !mensagem)       return res.status(400).json({ error: 'Título e mensagem são obrigatórios.' });
+  if (!titulo_en || !mensagem_en) return res.status(400).json({ error: 'Título e mensagem em inglês são obrigatórios.' });
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('titulo', sql.NVarChar, titulo)
-      .input('titulo_en', sql.NVarChar, titulo_en)
-      .input('mensagem', sql.NVarChar, mensagem)
-      .input('mensagem_en', sql.NVarChar, mensagem_en)
-      .input('tipo', sql.NVarChar, tipo || 'info')
-      .input('link_url', sql.NVarChar, link_url || null)
-      .input('link_texto', sql.NVarChar, link_texto || null)
-      .input('link_texto_en', sql.NVarChar, link_texto_en || null)
-      .input('activo', sql.Bit, activo !== undefined ? (activo ? 1 : 0) : 1)
-      .input('data_inicio', sql.DateTime2, data_inicio ? new Date(data_inicio) : new Date())
-      .input('data_fim', sql.DateTime2, data_fim ? new Date(data_fim) : null)
-      .input('criado_por', sql.Int, req.admin.id)
-      .query(`INSERT INTO anuncios (titulo, titulo_en, mensagem, mensagem_en, tipo, link_url, link_texto, link_texto_en, activo, data_inicio, data_fim, criado_por)
-              OUTPUT INSERTED.*
-              VALUES (@titulo, @titulo_en, @mensagem, @mensagem_en, @tipo, @link_url, @link_texto, @link_texto_en, @activo, @data_inicio, @data_fim, @criado_por)`);
-
-    const anuncio = result.recordset[0];
+    const { data: anuncio, error } = await supabase.from('anuncios').insert({
+      titulo, titulo_en, mensagem, mensagem_en, tipo: tipo || 'info',
+      link_url: link_url || null, link_texto: link_texto || null, link_texto_en: link_texto_en || null,
+      activo: activo !== undefined ? Boolean(activo) : true,
+      data_inicio: data_inicio ? new Date(data_inicio).toISOString() : new Date().toISOString(),
+      data_fim: data_fim ? new Date(data_fim).toISOString() : null,
+      criado_por: req.admin.id,
+    }).select().single();
+    if (error) throw error;
     await logAction(req.admin.id, 'CRIAR', 'anuncio', anuncio.id, `Anúncio "${titulo}" criado`, req.ip);
-
     res.status(201).json({ success: true, anuncio });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/anuncios/:id
 router.put('/anuncios/:id', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   const { titulo, titulo_en, mensagem, mensagem_en, tipo, link_url, link_texto, link_texto_en, activo, data_inicio, data_fim } = req.body;
-  
   try {
-    const pool = await poolPromise;
-    const request = pool.request().input('id', sql.Int, id);
-    
-    let updates = [];
-    if (titulo !== undefined) {
-      updates.push('titulo = @titulo');
-      request.input('titulo', sql.NVarChar, titulo);
-    }
-    if (titulo_en !== undefined) {
-      updates.push('titulo_en = @titulo_en');
-      request.input('titulo_en', sql.NVarChar, titulo_en);
-    }
-    if (mensagem !== undefined) {
-      updates.push('mensagem = @mensagem');
-      request.input('mensagem', sql.NVarChar, mensagem);
-    }
-    if (mensagem_en !== undefined) {
-      updates.push('mensagem_en = @mensagem_en');
-      request.input('mensagem_en', sql.NVarChar, mensagem_en);
-    }
-    if (tipo !== undefined) {
-      updates.push('tipo = @tipo');
-      request.input('tipo', sql.NVarChar, tipo);
-    }
-    if (link_url !== undefined) {
-      updates.push('link_url = @link_url');
-      request.input('link_url', sql.NVarChar, link_url);
-    }
-    if (link_texto !== undefined) {
-      updates.push('link_texto = @link_texto');
-      request.input('link_texto', sql.NVarChar, link_texto);
-    }
-    if (link_texto_en !== undefined) {
-      updates.push('link_texto_en = @link_texto_en');
-      request.input('link_texto_en', sql.NVarChar, link_texto_en);
-    }
-    if (activo !== undefined) {
-      updates.push('activo = @activo');
-      request.input('activo', sql.Bit, activo ? 1 : 0);
-    }
-    if (data_inicio !== undefined) {
-      updates.push('data_inicio = @data_inicio');
-      request.input('data_inicio', sql.DateTime2, new Date(data_inicio));
-    }
-    if (data_fim !== undefined) {
-      updates.push('data_fim = @data_fim');
-      request.input('data_fim', sql.DateTime2, data_fim ? new Date(data_fim) : null);
-    }
-    
-    if (updates.length === 0)
-      return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
-    
-    const result = await request.query(`UPDATE anuncios SET ${updates.join(', ')} WHERE id = @id; SELECT * FROM anuncios WHERE id = @id`);
+    const updates = {};
+    if (titulo      !== undefined) updates.titulo      = titulo;
+    if (titulo_en   !== undefined) updates.titulo_en   = titulo_en;
+    if (mensagem    !== undefined) updates.mensagem    = mensagem;
+    if (mensagem_en !== undefined) updates.mensagem_en = mensagem_en;
+    if (tipo        !== undefined) updates.tipo        = tipo;
+    if (link_url    !== undefined) updates.link_url    = link_url;
+    if (link_texto  !== undefined) updates.link_texto  = link_texto;
+    if (link_texto_en !== undefined) updates.link_texto_en = link_texto_en;
+    if (activo      !== undefined) updates.activo      = Boolean(activo);
+    if (data_inicio !== undefined) updates.data_inicio = new Date(data_inicio).toISOString();
+    if (data_fim    !== undefined) updates.data_fim    = data_fim ? new Date(data_fim).toISOString() : null;
 
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Anúncio não encontrado.' });
+    if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
 
-    const anuncio = result.recordset[0];
-    await logAction(req.admin.id, 'EDITAR', 'anuncio', parseInt(id), `Anúncio "${anuncio.titulo}" editado`, req.ip);
-
+    const { data: anuncio, error } = await supabase.from('anuncios')
+      .update(updates).eq('id', id).select().single();
+    if (error || !anuncio) return res.status(404).json({ error: 'Anúncio não encontrado.' });
+    await logAction(req.admin.id, 'EDITAR', 'anuncio', id, `Anúncio "${anuncio.titulo}" editado`, req.ip);
     res.json({ success: true, anuncio });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/admin/anuncios/:id
 router.delete('/anuncios/:id', authMiddleware, requireLevel('super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query('SELECT titulo FROM anuncios WHERE id = @id; DELETE FROM anuncios WHERE id = @id');
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Anúncio não encontrado.' });
-
-    const titulo = result.recordset[0].titulo;
-    await logAction(req.admin.id, 'ELIMINAR', 'anuncio', parseInt(id), `Anúncio "${titulo}" eliminado`, req.ip);
-
+    const { data: anuncio } = await supabase.from('anuncios').select('titulo').eq('id', id).single();
+    if (!anuncio) return res.status(404).json({ error: 'Anúncio não encontrado.' });
+    await supabase.from('anuncios').delete().eq('id', id);
+    await logAction(req.admin.id, 'ELIMINAR', 'anuncio', id, `Anúncio "${anuncio.titulo}" eliminado`, req.ip);
     res.json({ success: true, message: 'Anúncio eliminado.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  GESTÃO DE CONTEÚDO - FAQ
+//  GESTÃO DE CONTEÚDO — FAQ
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/faq
 router.get('/faq', authMiddleware, async (req, res) => {
   const { categoria, activo } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    let query = 'SELECT * FROM faq WHERE 1=1';
-    const request = pool.request();
-
-    if (categoria) {
-      query += ' AND categoria = @categoria';
-      request.input('categoria', sql.NVarChar, categoria);
-    }
-    if (activo !== undefined) {
-      query += ' AND activo = @activo';
-      request.input('activo', sql.Bit, activo === 'true' || activo === '1' ? 1 : 0);
-    }
-
-    query += ' ORDER BY ordem ASC, criado_em DESC';
-
-    const result = await request.query(query);
-    res.json({ faq: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    let query = supabase.from('faq').select('*').order('ordem').order('criado_em', { ascending: false });
+    if (categoria)           query = query.eq('categoria', categoria);
+    if (activo !== undefined) query = query.eq('activo', activo === 'true' || activo === '1');
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ faq: data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/admin/faq
 router.post('/faq', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
   const { pergunta, resposta, categoria, ordem, activo } = req.body;
-  
-  if (!pergunta || !resposta) 
-    return res.status(400).json({ error: 'Pergunta e resposta são obrigatórios.' });
-  
+  if (!pergunta || !resposta) return res.status(400).json({ error: 'Pergunta e resposta são obrigatórios.' });
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('pergunta', sql.NVarChar, pergunta)
-      .input('resposta', sql.NVarChar, resposta)
-      .input('categoria', sql.NVarChar, categoria || null)
-      .input('ordem', sql.Int, ordem || 0)
-      .input('activo', sql.Bit, activo !== undefined ? (activo ? 1 : 0) : 1)
-      .query(`INSERT INTO faq (pergunta, resposta, categoria, ordem, activo)
-              OUTPUT INSERTED.*
-              VALUES (@pergunta, @resposta, @categoria, @ordem, @activo)`);
-
-    const faq = result.recordset[0];
+    const { data: faq, error } = await supabase.from('faq').insert({
+      pergunta, resposta, categoria: categoria || null,
+      ordem: ordem || 0, activo: activo !== undefined ? Boolean(activo) : true,
+    }).select().single();
+    if (error) throw error;
     await logAction(req.admin.id, 'CRIAR', 'faq', faq.id, `FAQ criado: "${pergunta}"`, req.ip);
-
     res.status(201).json({ success: true, faq });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/faq/:id
 router.put('/faq/:id', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   const { pergunta, resposta, categoria, ordem, activo } = req.body;
-  
   try {
-    const pool = await poolPromise;
-    const request = pool.request().input('id', sql.Int, id);
-    
-    let updates = [];
-    if (pergunta !== undefined) {
-      updates.push('pergunta = @pergunta');
-      request.input('pergunta', sql.NVarChar, pergunta);
-    }
-    if (resposta !== undefined) {
-      updates.push('resposta = @resposta');
-      request.input('resposta', sql.NVarChar, resposta);
-    }
-    if (categoria !== undefined) {
-      updates.push('categoria = @categoria');
-      request.input('categoria', sql.NVarChar, categoria);
-    }
-    if (ordem !== undefined) {
-      updates.push('ordem = @ordem');
-      request.input('ordem', sql.Int, ordem);
-    }
-    if (activo !== undefined) {
-      updates.push('activo = @activo');
-      request.input('activo', sql.Bit, activo ? 1 : 0);
-    }
-    
-    if (updates.length === 0)
-      return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
-    
-    const result = await request.query(`UPDATE faq SET ${updates.join(', ')} WHERE id = @id; SELECT * FROM faq WHERE id = @id`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'FAQ não encontrado.' });
-
-    const faq = result.recordset[0];
-    await logAction(req.admin.id, 'EDITAR', 'faq', parseInt(id), `FAQ editado`, req.ip);
-
+    const updates = {};
+    if (pergunta  !== undefined) updates.pergunta  = pergunta;
+    if (resposta  !== undefined) updates.resposta  = resposta;
+    if (categoria !== undefined) updates.categoria = categoria;
+    if (ordem     !== undefined) updates.ordem     = ordem;
+    if (activo    !== undefined) updates.activo    = Boolean(activo);
+    if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
+    const { data: faq, error } = await supabase.from('faq').update(updates).eq('id', id).select().single();
+    if (error || !faq) return res.status(404).json({ error: 'FAQ não encontrado.' });
+    await logAction(req.admin.id, 'EDITAR', 'faq', id, `FAQ editado`, req.ip);
     res.json({ success: true, faq });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/admin/faq/:id
 router.delete('/faq/:id', authMiddleware, requireLevel('super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, id)
-      .query('DELETE FROM faq WHERE id = @id');
-
-    await logAction(req.admin.id, 'ELIMINAR', 'faq', parseInt(id), `FAQ eliminado`, req.ip);
-
+    await supabase.from('faq').delete().eq('id', id);
+    await logAction(req.admin.id, 'ELIMINAR', 'faq', id, `FAQ eliminado`, req.ip);
     res.json({ success: true, message: 'FAQ eliminado.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  GESTÃO DE CONTEÚDO - PROJECTOS
+//  GESTÃO DE CONTEÚDO — PROJECTOS
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/projectos
 router.get('/projectos', authMiddleware, async (req, res) => {
   const { status, limit = 50, offset = 0 } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    let query = 'SELECT * FROM projectos WHERE 1=1';
-    const request = pool.request();
-
-    if (status) {
-      query += ' AND status = @status';
-      request.input('status', sql.NVarChar, status);
-    }
-
-    query += ' ORDER BY criado_em DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
-    request.input('offset', sql.Int, parseInt(offset));
-    request.input('limit', sql.Int, parseInt(limit));
-
-    const result = await request.query(query);
-    res.json({ projectos: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    let query = supabase.from('projectos').select('*')
+      .order('criado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+    if (status) query = query.eq('status', status);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ projectos: data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/admin/projectos
 router.post('/projectos', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { 
+  const {
     nome, nome_en, descricao, descricao_en, fileira, investimento_usd, hectares,
     produtores_capacitar, capacidade_anual_t, ano_inicio, ano_conclusao, status,
     coordenador, telefone_coordenador, email_coordenador, provincias, tecnologias,
-    mercados_exportacao, logo_emoji, cor_tema
+    mercados_exportacao, logo_emoji, cor_tema,
   } = req.body;
-  
-  if (!nome || !descricao || !nome_en || !descricao_en) 
+
+  if (!nome || !descricao || !nome_en || !descricao_en)
     return res.status(400).json({ error: 'Nome e descrição em português e inglês são obrigatórios.' });
 
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('nome', sql.NVarChar, nome)
-      .input('nome_en', sql.NVarChar, nome_en)
-      .input('descricao', sql.NVarChar, descricao)
-      .input('descricao_en', sql.NVarChar, descricao_en)
-      .input('fileira', sql.NVarChar, fileira || '')
-      .input('investimento_usd', sql.Decimal(14, 2), investimento_usd || 0)
-      .input('hectares', sql.Decimal(10, 2), hectares || 0)
-      .input('produtores_capacitar', sql.Int, produtores_capacitar || 0)
-      .input('capacidade_anual_t', sql.Decimal(10, 2), capacidade_anual_t || 0)
-      .input('ano_inicio', sql.Int, ano_inicio || new Date().getFullYear())
-      .input('ano_conclusao', sql.Int, ano_conclusao || new Date().getFullYear() + 3)
-      .input('status', sql.NVarChar, status || 'em_planeamento')
-      .input('coordenador', sql.NVarChar, coordenador || null)
-      .input('telefone_coordenador', sql.NVarChar, telefone_coordenador || null)
-      .input('email_coordenador', sql.NVarChar, email_coordenador || null)
-      .input('provincias', sql.NVarChar, provincias || null)
-      .input('tecnologias', sql.NVarChar, tecnologias || null)
-      .input('mercados_exportacao', sql.NVarChar, mercados_exportacao || null)
-      .input('logo_emoji', sql.NVarChar, logo_emoji || '📋')
-      .input('cor_tema', sql.NVarChar, cor_tema || '#C49A3C')
-      .query(`INSERT INTO projectos (nome, nome_en, descricao, descricao_en, fileira, investimento_usd, hectares, produtores_capacitar, capacidade_anual_t, ano_inicio, ano_conclusao, status, coordenador, telefone_coordenador, email_coordenador, provincias, tecnologias, mercados_exportacao, logo_emoji, cor_tema)
-              OUTPUT INSERTED.*
-              VALUES (@nome, @nome_en, @descricao, @descricao_en, @fileira, @investimento_usd, @hectares, @produtores_capacitar, @capacidade_anual_t, @ano_inicio, @ano_conclusao, @status, @coordenador, @telefone_coordenador, @email_coordenador, @provincias, @tecnologias, @mercados_exportacao, @logo_emoji, @cor_tema)`);
+    const { data: projecto, error } = await supabase.from('projectos').insert({
+      nome, nome_en, descricao, descricao_en, fileira: fileira || '',
+      investimento_usd: investimento_usd || 0, hectares: hectares || 0,
+      produtores_capacitar: produtores_capacitar || 0, capacidade_anual_t: capacidade_anual_t || 0,
+      ano_inicio: ano_inicio || new Date().getFullYear(),
+      ano_conclusao: ano_conclusao || new Date().getFullYear() + 3,
+      status: status || 'em_planeamento',
+      coordenador: coordenador || null, telefone_coordenador: telefone_coordenador || null,
+      email_coordenador: email_coordenador || null, provincias: provincias || null,
+      tecnologias: tecnologias || null, mercados_exportacao: mercados_exportacao || null,
+      logo_emoji: logo_emoji || '📋', cor_tema: cor_tema || '#C49A3C',
+    }).select().single();
 
-    const projecto = result.recordset[0];
+    if (error) throw error;
     await logAction(req.admin.id, 'CRIAR', 'projecto', projecto.id, `Projecto criado: "${nome}"`, req.ip);
-
     res.status(201).json({ success: true, projecto });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/projectos/:id
 router.put('/projectos/:id', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
-  const { 
+  const id = parseInt(req.params.id);
+  const {
     nome, nome_en, descricao, descricao_en, fileira, investimento_usd, hectares,
     produtores_capacitar, capacidade_anual_t, ano_inicio, ano_conclusao, status,
     coordenador, telefone_coordenador, email_coordenador, provincias, tecnologias,
-    mercados_exportacao, logo_emoji, cor_tema
+    mercados_exportacao, logo_emoji, cor_tema,
   } = req.body;
-  
+
   try {
-    const pool = await poolPromise;
-    const request = pool.request().input('id', sql.Int, id);
+    const updates = { actualizado_em: new Date().toISOString() };
+    if (nome                !== undefined) updates.nome                = nome;
+    if (nome_en             !== undefined) updates.nome_en             = nome_en;
+    if (descricao           !== undefined) updates.descricao           = descricao;
+    if (descricao_en        !== undefined) updates.descricao_en        = descricao_en;
+    if (fileira             !== undefined) updates.fileira             = fileira;
+    if (investimento_usd    !== undefined) updates.investimento_usd    = investimento_usd;
+    if (hectares            !== undefined) updates.hectares            = hectares;
+    if (produtores_capacitar !== undefined) updates.produtores_capacitar = produtores_capacitar;
+    if (capacidade_anual_t  !== undefined) updates.capacidade_anual_t  = capacidade_anual_t;
+    if (ano_inicio          !== undefined) updates.ano_inicio          = ano_inicio;
+    if (ano_conclusao       !== undefined) updates.ano_conclusao       = ano_conclusao;
+    if (status              !== undefined) updates.status              = status;
+    if (coordenador         !== undefined) updates.coordenador         = coordenador;
+    if (telefone_coordenador !== undefined) updates.telefone_coordenador = telefone_coordenador;
+    if (email_coordenador   !== undefined) updates.email_coordenador   = email_coordenador;
+    if (provincias          !== undefined) updates.provincias          = provincias;
+    if (tecnologias         !== undefined) updates.tecnologias         = tecnologias;
+    if (mercados_exportacao !== undefined) updates.mercados_exportacao = mercados_exportacao;
+    if (logo_emoji          !== undefined) updates.logo_emoji          = logo_emoji;
+    if (cor_tema            !== undefined) updates.cor_tema            = cor_tema;
 
-    const updates = [];
-    if (nome !== undefined) {
-      updates.push('nome = @nome');
-      request.input('nome', sql.NVarChar, nome);
-    }
-    if (nome_en !== undefined) {
-      updates.push('nome_en = @nome_en');
-      request.input('nome_en', sql.NVarChar, nome_en);
-    }
-    if (descricao !== undefined) {
-      updates.push('descricao = @descricao');
-      request.input('descricao', sql.NVarChar, descricao);
-    }
-    if (descricao_en !== undefined) {
-      updates.push('descricao_en = @descricao_en');
-      request.input('descricao_en', sql.NVarChar, descricao_en);
-    }
-    if (fileira !== undefined) {
-      updates.push('fileira = @fileira');
-      request.input('fileira', sql.NVarChar, fileira);
-    }
-    if (investimento_usd !== undefined) {
-      updates.push('investimento_usd = @investimento_usd');
-      request.input('investimento_usd', sql.Decimal(14, 2), investimento_usd);
-    }
-    if (hectares !== undefined) {
-      updates.push('hectares = @hectares');
-      request.input('hectares', sql.Decimal(10, 2), hectares);
-    }
-    if (produtores_capacitar !== undefined) {
-      updates.push('produtores_capacitar = @produtores_capacitar');
-      request.input('produtores_capacitar', sql.Int, produtores_capacitar);
-    }
-    if (capacidade_anual_t !== undefined) {
-      updates.push('capacidade_anual_t = @capacidade_anual_t');
-      request.input('capacidade_anual_t', sql.Decimal(10, 2), capacidade_anual_t);
-    }
-    if (ano_inicio !== undefined) {
-      updates.push('ano_inicio = @ano_inicio');
-      request.input('ano_inicio', sql.Int, ano_inicio);
-    }
-    if (ano_conclusao !== undefined) {
-      updates.push('ano_conclusao = @ano_conclusao');
-      request.input('ano_conclusao', sql.Int, ano_conclusao);
-    }
-    if (status !== undefined) {
-      updates.push('status = @status');
-      request.input('status', sql.NVarChar, status);
-    }
-    if (coordenador !== undefined) {
-      updates.push('coordenador = @coordenador');
-      request.input('coordenador', sql.NVarChar, coordenador);
-    }
-    if (telefone_coordenador !== undefined) {
-      updates.push('telefone_coordenador = @telefone_coordenador');
-      request.input('telefone_coordenador', sql.NVarChar, telefone_coordenador);
-    }
-    if (email_coordenador !== undefined) {
-      updates.push('email_coordenador = @email_coordenador');
-      request.input('email_coordenador', sql.NVarChar, email_coordenador);
-    }
-    if (provincias !== undefined) {
-      updates.push('provincias = @provincias');
-      request.input('provincias', sql.NVarChar, provincias);
-    }
-    if (tecnologias !== undefined) {
-      updates.push('tecnologias = @tecnologias');
-      request.input('tecnologias', sql.NVarChar, tecnologias);
-    }
-    if (mercados_exportacao !== undefined) {
-      updates.push('mercados_exportacao = @mercados_exportacao');
-      request.input('mercados_exportacao', sql.NVarChar, mercados_exportacao);
-    }
-    if (logo_emoji !== undefined) {
-      updates.push('logo_emoji = @logo_emoji');
-      request.input('logo_emoji', sql.NVarChar, logo_emoji);
-    }
-    if (cor_tema !== undefined) {
-      updates.push('cor_tema = @cor_tema');
-      request.input('cor_tema', sql.NVarChar, cor_tema);
-    }
+    if (Object.keys(updates).length === 1) return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
 
-    if (updates.length === 0)
-      return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
-    
-    const result = await request.query(`UPDATE projectos SET ${updates.join(', ')}, actualizado_em = GETDATE() WHERE id = @id; SELECT * FROM projectos WHERE id = @id`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Projecto não encontrado.' });
-
-    const projecto = result.recordset[0];
-    await logAction(req.admin.id, 'EDITAR', 'projecto', parseInt(id), `Projecto editado`, req.ip);
-
+    const { data: projecto, error } = await supabase.from('projectos')
+      .update(updates).eq('id', id).select().single();
+    if (error || !projecto) return res.status(404).json({ error: 'Projecto não encontrado.' });
+    await logAction(req.admin.id, 'EDITAR', 'projecto', id, `Projecto editado`, req.ip);
     res.json({ success: true, projecto });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/admin/projectos/:id
 router.delete('/projectos/:id', authMiddleware, requireLevel('super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, id)
-      .query('DELETE FROM projectos WHERE id = @id');
-
-    await logAction(req.admin.id, 'ELIMINAR', 'projecto', parseInt(id), `Projecto eliminado`, req.ip);
-
+    await supabase.from('projectos').delete().eq('id', id);
+    await logAction(req.admin.id, 'ELIMINAR', 'projecto', id, `Projecto eliminado`, req.ip);
     res.json({ success: true, message: 'Projecto eliminado.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  FOTOS DE PROJECTOS
+//  FOTOS DE PROJECTOS (Supabase Storage)
 // ════════════════════════════════════════════════════════════
 
-// Garante que a tabela projecto_fotos existe
-async function ensureFotosTable() {
-  try {
-    const pool = await poolPromise;
-    await pool.request().query(`
-      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'projecto_fotos')
-      CREATE TABLE projecto_fotos (
-        id           INT IDENTITY(1,1) PRIMARY KEY,
-        projecto_id  INT NOT NULL,
-        filename     NVARCHAR(255) NOT NULL,
-        url_path     NVARCHAR(500) NOT NULL,
-        ordem        INT DEFAULT 0,
-        criado_em    DATETIME2 DEFAULT GETDATE(),
-        CONSTRAINT fk_projecto_fotos FOREIGN KEY (projecto_id) REFERENCES projectos(id) ON DELETE CASCADE
-      )
-    `);
-  } catch (_) {}
-}
-ensureFotosTable();
-
-// GET /api/admin/projectos/:id/fotos
 router.get('/projectos/:id/fotos', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, req.params.id)
-      .query('SELECT * FROM projecto_fotos WHERE projecto_id = @id ORDER BY ordem, id');
-    res.json({ fotos: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('projecto_fotos')
+      .select('id, url_path, filename, ordem')
+      .eq('projecto_id', parseInt(req.params.id))
+      .order('ordem').order('id');
+    if (error) throw error;
+    res.json({ fotos: data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/admin/projectos/:id/fotos  (até 10 ficheiros por pedido)
-router.post('/projectos/:id/fotos', authMiddleware, requireLevel('admin', 'super_admin'), (req, res, next) => {
-  uploadFotos.array('fotos', 10)(req, res, err => {
-    if (err) return res.status(400).json({ error: err.message });
-    next();
-  });
-}, async (req, res) => {
-  if (!req.files || req.files.length === 0)
-    return res.status(400).json({ error: 'Nenhum ficheiro enviado.' });
+router.post('/projectos/:id/fotos', authMiddleware, requireLevel('admin', 'super_admin'),
+  (req, res, next) => {
+    uploadFotos.array('fotos', 10)(req, res, err => {
+      if (err) return res.status(400).json({ error: err.message });
+      next();
+    });
+  },
+  async (req, res) => {
+    if (!req.files || req.files.length === 0)
+      return res.status(400).json({ error: 'Nenhum ficheiro enviado.' });
 
-  try {
-    const pool = await poolPromise;
+    const projectoId = parseInt(req.params.id);
 
-    // Verificar quantas fotos já existem
-    const countResult = await pool.request()
-      .input('id', sql.Int, req.params.id)
-      .query('SELECT COUNT(*) AS total FROM projecto_fotos WHERE projecto_id = @id');
-    const existing = countResult.recordset[0].total;
+    try {
+      const { count } = await supabase.from('projecto_fotos')
+        .select('id', { count: 'exact', head: true })
+        .eq('projecto_id', projectoId);
 
-    if (existing + req.files.length > 10) {
-      // Apagar ficheiros recém-enviados pois ultrapassaria o limite
-      req.files.forEach(f => fs.unlink(f.path, () => {}));
-      return res.status(400).json({ error: `Limite de 10 fotos excedido. Já existem ${existing} fotos.` });
-    }
+      if ((count || 0) + req.files.length > 10)
+        return res.status(400).json({ error: `Limite de 10 fotos excedido. Já existem ${count} fotos.` });
 
-    const inserted = [];
-    for (const file of req.files) {
-      const urlPath = `/uploads/projectos/${req.params.id}/${file.filename}`;
-      const r = await pool.request()
-        .input('projecto_id', sql.Int, req.params.id)
-        .input('filename', sql.NVarChar, file.filename)
-        .input('url_path', sql.NVarChar, urlPath)
-        .query('INSERT INTO projecto_fotos (projecto_id, filename, url_path) OUTPUT INSERTED.* VALUES (@projecto_id, @filename, @url_path)');
-      inserted.push(r.recordset[0]);
-    }
+      const inserted = [];
+      for (const file of req.files) {
+        const ext      = path.extname(file.originalname).toLowerCase();
+        const filename = `foto_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
+        const storagePath = `${projectoId}/${filename}`;
 
-    await logAction(req.admin.id, 'UPLOAD', 'projecto_fotos', parseInt(req.params.id), `${req.files.length} foto(s) adicionada(s)`, req.ip);
-    res.status(201).json({ success: true, fotos: inserted });
-  } catch (err) {
-    req.files.forEach(f => fs.unlink(f.path, () => {}));
-    res.status(500).json({ error: err.message });
+        const { error: uploadErr } = await supabase.storage
+          .from('projectos')
+          .upload(storagePath, file.buffer, { contentType: file.mimetype });
+
+        if (uploadErr) throw uploadErr;
+
+        const { data: { publicUrl } } = supabase.storage.from('projectos').getPublicUrl(storagePath);
+
+        const { data: row, error: dbErr } = await supabase.from('projecto_fotos')
+          .insert({ projecto_id: projectoId, filename, url_path: publicUrl })
+          .select().single();
+        if (dbErr) throw dbErr;
+        inserted.push(row);
+      }
+
+      await logAction(req.admin.id, 'UPLOAD', 'projecto_fotos', projectoId, `${req.files.length} foto(s) adicionada(s)`, req.ip);
+      res.status(201).json({ success: true, fotos: inserted });
+    } catch (err) { res.status(500).json({ error: err.message }); }
   }
-});
+);
 
-// DELETE /api/admin/projectos/:id/fotos/:fotoId
 router.delete('/projectos/:id/fotos/:fotoId', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
+  const projectoId = parseInt(req.params.id);
+  const fotoId     = parseInt(req.params.fotoId);
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, req.params.id)
-      .input('fotoId', sql.Int, req.params.fotoId)
-      .query('SELECT * FROM projecto_fotos WHERE id = @fotoId AND projecto_id = @id');
+    const { data: foto } = await supabase.from('projecto_fotos')
+      .select('filename').eq('id', fotoId).eq('projecto_id', projectoId).single();
 
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Foto não encontrada.' });
+    if (!foto) return res.status(404).json({ error: 'Foto não encontrada.' });
 
-    const foto = result.recordset[0];
-    const filePath = path.join(__dirname, 'uploads', 'projectos', String(req.params.id), foto.filename);
-    fs.unlink(filePath, () => {});
+    await supabase.storage.from('projectos').remove([`${projectoId}/${foto.filename}`]);
+    await supabase.from('projecto_fotos').delete().eq('id', fotoId);
 
-    await pool.request()
-      .input('fotoId', sql.Int, req.params.fotoId)
-      .query('DELETE FROM projecto_fotos WHERE id = @fotoId');
-
-    await logAction(req.admin.id, 'ELIMINAR', 'projecto_fotos', parseInt(req.params.fotoId), `Foto eliminada do projecto ${req.params.id}`, req.ip);
+    await logAction(req.admin.id, 'ELIMINAR', 'projecto_fotos', fotoId, `Foto eliminada do projecto ${projectoId}`, req.ip);
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
-//  GESTÃO DE CONTEÚDO - MEDIA
+//  GESTÃO DE CONTEÚDO — MEDIA
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/media
 router.get('/media', authMiddleware, async (req, res) => {
   const { tipo, limit = 50, offset = 0 } = req.query;
-  
   try {
-    const pool = await poolPromise;
-    let query = `SELECT m.*, ad.nome as upload_por_nome
-                 FROM media m
-                 LEFT JOIN administradores ad ON m.upload_por = ad.id
-                 WHERE 1=1`;
-    const request = pool.request();
-
-    if (tipo) {
-      query += ' AND m.tipo = @tipo';
-      request.input('tipo', sql.NVarChar, tipo);
-    }
-
-    query += ' ORDER BY m.criado_em DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
-    request.input('offset', sql.Int, parseInt(offset));
-    request.input('limit', sql.Int, parseInt(limit));
-
-    const result = await request.query(query);
-    res.json({ media: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    let query = supabase.from('media')
+      .select('*, administradores(nome)')
+      .order('criado_em', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+    if (tipo) query = query.eq('tipo', tipo);
+    const { data, error } = await query;
+    if (error) throw error;
+    const media = (data || []).map(({ administradores: a, ...m }) => ({ ...m, upload_por_nome: a?.nome }));
+    res.json({ media });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/admin/media
 router.post('/media', authMiddleware, async (req, res) => {
   const { titulo, descricao, tipo, url, tamanho_kb, mime_type } = req.body;
-  
-  if (!titulo || !tipo || !url) 
-    return res.status(400).json({ error: 'Título, tipo e URL são obrigatórios.' });
-  
+  if (!titulo || !tipo || !url) return res.status(400).json({ error: 'Título, tipo e URL são obrigatórios.' });
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('titulo', sql.NVarChar, titulo)
-      .input('descricao', sql.NVarChar, descricao || null)
-      .input('tipo', sql.NVarChar, tipo)
-      .input('url', sql.NVarChar, url)
-      .input('tamanho_kb', sql.Int, tamanho_kb || null)
-      .input('mime_type', sql.NVarChar, mime_type || null)
-      .input('upload_por', sql.Int, req.admin.id)
-      .query(`INSERT INTO media (titulo, descricao, tipo, url, tamanho_kb, mime_type, upload_por)
-              OUTPUT INSERTED.*
-              VALUES (@titulo, @descricao, @tipo, @url, @tamanho_kb, @mime_type, @upload_por)`);
-
-    const media = result.recordset[0];
+    const { data: media, error } = await supabase.from('media').insert({
+      titulo, descricao: descricao || null, tipo, url,
+      tamanho_kb: tamanho_kb || null, mime_type: mime_type || null,
+      upload_por: req.admin.id,
+    }).select().single();
+    if (error) throw error;
     await logAction(req.admin.id, 'UPLOAD', 'media', media.id, `Media "${titulo}" adicionado`, req.ip);
-
     res.status(201).json({ success: true, media });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/admin/media/:id
 router.delete('/media/:id', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
-  
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query('SELECT titulo FROM media WHERE id = @id; DELETE FROM media WHERE id = @id');
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Media não encontrado.' });
-
-    const titulo = result.recordset[0].titulo;
-    await logAction(req.admin.id, 'ELIMINAR', 'media', parseInt(id), `Media "${titulo}" eliminado`, req.ip);
-
+    const { data: media } = await supabase.from('media').select('titulo').eq('id', id).single();
+    if (!media) return res.status(404).json({ error: 'Media não encontrado.' });
+    await supabase.from('media').delete().eq('id', id);
+    await logAction(req.admin.id, 'ELIMINAR', 'media', id, `Media "${media.titulo}" eliminado`, req.ip);
     res.json({ success: true, message: 'Media eliminado.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
 //  GESTÃO DE FILEIRAS
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/fileiras
 router.get('/fileiras', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query('SELECT * FROM fileiras ORDER BY ordem ASC, id ASC');
-    res.json({ fileiras: result.recordset });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase.from('fileiras').select('*').order('ordem').order('id');
+    if (error) throw error;
+    res.json({ fileiras: data || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/admin/fileiras
 router.post('/fileiras', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
   const {
     nome_pt, nome_en, nome_latin, icone,
     descricao_pt, descricao_en, descricao_detalhada_pt, descricao_detalhada_en,
     stat1_valor, stat1_label_pt, stat1_label_en,
     stat2_valor, stat2_label_pt, stat2_label_en,
-    provincias, mercados, cor_tema, ordem, activo
+    provincias, mercados, cor_tema, ordem, activo,
   } = req.body;
 
-  if (!nome_pt)
-    return res.status(400).json({ error: 'Nome em português é obrigatório.' });
+  if (!nome_pt) return res.status(400).json({ error: 'Nome em português é obrigatório.' });
 
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('nome_pt',                sql.NVarChar, nome_pt)
-      .input('nome_en',                sql.NVarChar, nome_en || nome_pt)
-      .input('nome_latin',             sql.NVarChar, nome_latin             || null)
-      .input('icone',                  sql.NVarChar, icone                  || '🌿')
-      .input('descricao_pt',           sql.NVarChar, descricao_pt           || null)
-      .input('descricao_en',           sql.NVarChar, descricao_en           || null)
-      .input('descricao_detalhada_pt', sql.NVarChar, descricao_detalhada_pt || null)
-      .input('descricao_detalhada_en', sql.NVarChar, descricao_detalhada_en || null)
-      .input('stat1_valor',            sql.NVarChar, stat1_valor            || null)
-      .input('stat1_label_pt',         sql.NVarChar, stat1_label_pt         || null)
-      .input('stat1_label_en',         sql.NVarChar, stat1_label_en         || null)
-      .input('stat2_valor',            sql.NVarChar, stat2_valor            || null)
-      .input('stat2_label_pt',         sql.NVarChar, stat2_label_pt         || null)
-      .input('stat2_label_en',         sql.NVarChar, stat2_label_en         || null)
-      .input('provincias',             sql.NVarChar, provincias             || null)
-      .input('mercados',               sql.NVarChar, mercados               || null)
-      .input('cor_tema',               sql.NVarChar, cor_tema               || '#C49A3C')
-      .input('ordem',                  sql.Int,      ordem != null ? parseInt(ordem) : 0)
-      .input('activo',                 sql.Bit,      activo !== undefined ? (activo ? 1 : 0) : 1)
-      .query(`INSERT INTO fileiras (
-                nome_pt, nome_en, nome_latin, icone,
-                descricao_pt, descricao_en, descricao_detalhada_pt, descricao_detalhada_en,
-                stat1_valor, stat1_label_pt, stat1_label_en,
-                stat2_valor, stat2_label_pt, stat2_label_en,
-                provincias, mercados, cor_tema, ordem, activo
-              )
-              OUTPUT INSERTED.*
-              VALUES (
-                @nome_pt, @nome_en, @nome_latin, @icone,
-                @descricao_pt, @descricao_en, @descricao_detalhada_pt, @descricao_detalhada_en,
-                @stat1_valor, @stat1_label_pt, @stat1_label_en,
-                @stat2_valor, @stat2_label_pt, @stat2_label_en,
-                @provincias, @mercados, @cor_tema, @ordem, @activo
-              )`);
+    const { data: fileira, error } = await supabase.from('fileiras').insert({
+      nome_pt, nome_en: nome_en || nome_pt, nome_latin: nome_latin || null,
+      icone: icone || '🌿',
+      descricao_pt: descricao_pt || null, descricao_en: descricao_en || null,
+      descricao_detalhada_pt: descricao_detalhada_pt || null,
+      descricao_detalhada_en: descricao_detalhada_en || null,
+      stat1_valor: stat1_valor || null, stat1_label_pt: stat1_label_pt || null, stat1_label_en: stat1_label_en || null,
+      stat2_valor: stat2_valor || null, stat2_label_pt: stat2_label_pt || null, stat2_label_en: stat2_label_en || null,
+      provincias: provincias || null, mercados: mercados || null,
+      cor_tema: cor_tema || '#C49A3C', ordem: ordem != null ? parseInt(ordem) : 0,
+      activo: activo !== undefined ? Boolean(activo) : true,
+    }).select().single();
 
-    const fileira = result.recordset[0];
+    if (error) throw error;
     await logAction(req.admin.id, 'CRIAR', 'fileira', fileira.id, `Fileira "${nome_pt}" criada`, req.ip);
-
     res.status(201).json({ success: true, fileira });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/fileiras/:id
 router.put('/fileiras/:id', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   const {
     nome_pt, nome_en, nome_latin, icone,
     descricao_pt, descricao_en, descricao_detalhada_pt, descricao_detalhada_en,
     stat1_valor, stat1_label_pt, stat1_label_en,
     stat2_valor, stat2_label_pt, stat2_label_en,
-    provincias, mercados, cor_tema, ordem, activo
+    provincias, mercados, cor_tema, ordem, activo,
   } = req.body;
 
   try {
-    const pool = await poolPromise;
-    const request = pool.request().input('id', sql.Int, parseInt(id));
-    const updates = [];
+    const updates = { actualizado_em: new Date().toISOString() };
+    if (nome_pt                !== undefined) updates.nome_pt                = nome_pt;
+    if (nome_en                !== undefined) updates.nome_en                = nome_en;
+    if (nome_latin             !== undefined) updates.nome_latin             = nome_latin;
+    if (icone                  !== undefined) updates.icone                  = icone;
+    if (descricao_pt           !== undefined) updates.descricao_pt           = descricao_pt;
+    if (descricao_en           !== undefined) updates.descricao_en           = descricao_en;
+    if (descricao_detalhada_pt !== undefined) updates.descricao_detalhada_pt = descricao_detalhada_pt;
+    if (descricao_detalhada_en !== undefined) updates.descricao_detalhada_en = descricao_detalhada_en;
+    if (stat1_valor            !== undefined) updates.stat1_valor            = stat1_valor;
+    if (stat1_label_pt         !== undefined) updates.stat1_label_pt         = stat1_label_pt;
+    if (stat1_label_en         !== undefined) updates.stat1_label_en         = stat1_label_en;
+    if (stat2_valor            !== undefined) updates.stat2_valor            = stat2_valor;
+    if (stat2_label_pt         !== undefined) updates.stat2_label_pt         = stat2_label_pt;
+    if (stat2_label_en         !== undefined) updates.stat2_label_en         = stat2_label_en;
+    if (provincias             !== undefined) updates.provincias             = provincias;
+    if (mercados               !== undefined) updates.mercados               = mercados;
+    if (cor_tema               !== undefined) updates.cor_tema               = cor_tema;
+    if (ordem                  !== undefined) updates.ordem                  = parseInt(ordem);
+    if (activo                 !== undefined) updates.activo                 = Boolean(activo);
 
-    if (nome_pt               !== undefined) { updates.push('nome_pt = @nome_pt');                               request.input('nome_pt',                sql.NVarChar, nome_pt); }
-    if (nome_en               !== undefined) { updates.push('nome_en = @nome_en');                               request.input('nome_en',                sql.NVarChar, nome_en); }
-    if (nome_latin            !== undefined) { updates.push('nome_latin = @nome_latin');                         request.input('nome_latin',             sql.NVarChar, nome_latin); }
-    if (icone                 !== undefined) { updates.push('icone = @icone');                                   request.input('icone',                  sql.NVarChar, icone); }
-    if (descricao_pt          !== undefined) { updates.push('descricao_pt = @descricao_pt');                     request.input('descricao_pt',           sql.NVarChar, descricao_pt); }
-    if (descricao_en          !== undefined) { updates.push('descricao_en = @descricao_en');                     request.input('descricao_en',           sql.NVarChar, descricao_en); }
-    if (descricao_detalhada_pt!== undefined) { updates.push('descricao_detalhada_pt = @descricao_detalhada_pt'); request.input('descricao_detalhada_pt', sql.NVarChar, descricao_detalhada_pt); }
-    if (descricao_detalhada_en!== undefined) { updates.push('descricao_detalhada_en = @descricao_detalhada_en'); request.input('descricao_detalhada_en', sql.NVarChar, descricao_detalhada_en); }
-    if (stat1_valor           !== undefined) { updates.push('stat1_valor = @stat1_valor');                       request.input('stat1_valor',            sql.NVarChar, stat1_valor); }
-    if (stat1_label_pt        !== undefined) { updates.push('stat1_label_pt = @stat1_label_pt');                 request.input('stat1_label_pt',         sql.NVarChar, stat1_label_pt); }
-    if (stat1_label_en        !== undefined) { updates.push('stat1_label_en = @stat1_label_en');                 request.input('stat1_label_en',         sql.NVarChar, stat1_label_en); }
-    if (stat2_valor           !== undefined) { updates.push('stat2_valor = @stat2_valor');                       request.input('stat2_valor',            sql.NVarChar, stat2_valor); }
-    if (stat2_label_pt        !== undefined) { updates.push('stat2_label_pt = @stat2_label_pt');                 request.input('stat2_label_pt',         sql.NVarChar, stat2_label_pt); }
-    if (stat2_label_en        !== undefined) { updates.push('stat2_label_en = @stat2_label_en');                 request.input('stat2_label_en',         sql.NVarChar, stat2_label_en); }
-    if (provincias            !== undefined) { updates.push('provincias = @provincias');                         request.input('provincias',             sql.NVarChar, provincias); }
-    if (mercados              !== undefined) { updates.push('mercados = @mercados');                             request.input('mercados',               sql.NVarChar, mercados); }
-    if (cor_tema              !== undefined) { updates.push('cor_tema = @cor_tema');                             request.input('cor_tema',               sql.NVarChar, cor_tema); }
-    if (ordem                 !== undefined) { updates.push('ordem = @ordem');                                   request.input('ordem',                  sql.Int,      parseInt(ordem)); }
-    if (activo                !== undefined) { updates.push('activo = @activo');                                 request.input('activo',                 sql.Bit,      activo ? 1 : 0); }
+    if (Object.keys(updates).length === 1) return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
 
-    if (updates.length === 0)
-      return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
-
-    updates.push('actualizado_em = GETDATE()');
-
-    const result = await request.query(`UPDATE fileiras SET ${updates.join(', ')} WHERE id = @id; SELECT * FROM fileiras WHERE id = @id`);
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Fileira não encontrada.' });
-
-    const fileira = result.recordset[0];
-    await logAction(req.admin.id, 'EDITAR', 'fileira', parseInt(id), `Fileira "${fileira.nome_pt}" editada`, req.ip);
-
+    const { data: fileira, error } = await supabase.from('fileiras')
+      .update(updates).eq('id', id).select().single();
+    if (error || !fileira) return res.status(404).json({ error: 'Fileira não encontrada.' });
+    await logAction(req.admin.id, 'EDITAR', 'fileira', id, `Fileira "${fileira.nome_pt}" editada`, req.ip);
     res.json({ success: true, fileira });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/admin/fileiras/:id
 router.delete('/fileiras/:id', authMiddleware, requireLevel('super_admin'), async (req, res) => {
-  const { id } = req.params;
-
+  const id = parseInt(req.params.id);
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .query('SELECT nome_pt FROM fileiras WHERE id = @id; DELETE FROM fileiras WHERE id = @id');
-
-    if (result.recordset.length === 0)
-      return res.status(404).json({ error: 'Fileira não encontrada.' });
-
-    const nome = result.recordset[0].nome_pt;
-    await logAction(req.admin.id, 'ELIMINAR', 'fileira', parseInt(id), `Fileira "${nome}" eliminada`, req.ip);
-
+    const { data: fileira } = await supabase.from('fileiras').select('nome_pt').eq('id', id).single();
+    if (!fileira) return res.status(404).json({ error: 'Fileira não encontrada.' });
+    await supabase.from('fileiras').delete().eq('id', id);
+    await logAction(req.admin.id, 'ELIMINAR', 'fileira', id, `Fileira "${fileira.nome_pt}" eliminada`, req.ip);
     res.json({ success: true, message: 'Fileira eliminada.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════
 //  KPIs HOMEPAGE
 // ════════════════════════════════════════════════════════════
 
-// GET /api/admin/kpis
 router.get('/kpis', authMiddleware, async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query('SELECT * FROM kpis_homepage ORDER BY ordem ASC');
-    res.json({ kpis: result.recordset });
+    const { data, error } = await supabase.from('kpis_homepage').select('*').order('ordem');
+    if (error) throw error;
+    res.json({ kpis: data || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/admin/kpis/:chave
 router.put('/kpis/:chave', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
   const { chave } = req.params;
   const { valor_num, sufixo, label_pt, label_en } = req.body;
   try {
-    const pool = await poolPromise;
-    const updates = [];
-    const request = pool.request().input('chave', sql.NVarChar, chave);
-    if (valor_num !== undefined) { updates.push('valor_num = @valor_num'); request.input('valor_num', sql.Decimal(18, 2), parseFloat(valor_num)); }
-    if (sufixo    !== undefined) { updates.push('sufixo = @sufixo');       request.input('sufixo',    sql.NVarChar, sufixo || null); }
-    if (label_pt  !== undefined) { updates.push('label_pt = @label_pt');   request.input('label_pt',  sql.NVarChar, label_pt); }
-    if (label_en  !== undefined) { updates.push('label_en = @label_en');   request.input('label_en',  sql.NVarChar, label_en); }
-    if (updates.length === 0) return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
-    updates.push('actualizado_em = GETDATE()');
-    const result = await request.query(`UPDATE kpis_homepage SET ${updates.join(', ')} WHERE chave = @chave; SELECT * FROM kpis_homepage WHERE chave = @chave`);
-    if (result.recordset.length === 0) return res.status(404).json({ error: 'KPI não encontrado.' });
+    const updates = { actualizado_em: new Date().toISOString() };
+    if (valor_num !== undefined) updates.valor_num = parseFloat(valor_num);
+    if (sufixo    !== undefined) updates.sufixo    = sufixo || null;
+    if (label_pt  !== undefined) updates.label_pt  = label_pt;
+    if (label_en  !== undefined) updates.label_en  = label_en;
+    if (Object.keys(updates).length === 1) return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
+
+    const { data: kpi, error } = await supabase.from('kpis_homepage')
+      .update(updates).eq('chave', chave).select().single();
+    if (error || !kpi) return res.status(404).json({ error: 'KPI não encontrado.' });
     await logAction(req.admin.id, 'EDITAR', 'kpi_homepage', null, `KPI "${chave}" actualizado`, req.ip);
-    res.json({ success: true, kpi: result.recordset[0] });
+    res.json({ success: true, kpi });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
