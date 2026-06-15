@@ -505,6 +505,26 @@ app.get('/api/faq', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/homepage-stats
+app.get('/api/homepage-stats', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .query('SELECT chave, valor_num, sufixo, label_pt, label_en FROM kpis_homepage ORDER BY ordem ASC');
+    res.json({ kpis: result.recordset });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/fileiras
+app.get('/api/fileiras', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .query('SELECT * FROM fileiras WHERE activo = 1 ORDER BY ordem ASC, id ASC');
+    res.json({ fileiras: result.recordset });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ════════════════════════════════════════════════════════════
 //  GESTÃO DE PRODUTORES
 // ════════════════════════════════════════════════════════════
@@ -995,6 +1015,42 @@ app.get('/api/projectos/fotos', async (req, res) => {
   }
 });
 
+// GET /api/projectos/estatisticas - Estatísticas dos projectos
+app.get('/api/projectos/estatisticas', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .query(`
+        SELECT
+          COUNT(*) as total_projectos,
+          SUM(investimento_usd) as investimento_total,
+          SUM(hectares) as hectares_total,
+          SUM(produtores_capacitar) as produtores_total,
+          SUM(capacidade_anual_t) as capacidade_total,
+          COUNT(CASE WHEN status = 'em_execucao' THEN 1 END) as projectos_em_execucao,
+          COUNT(CASE WHEN status = 'concluido' THEN 1 END) as projectos_concluidos,
+          COUNT(CASE WHEN status = 'em_planeamento' THEN 1 END) as projectos_em_planeamento
+        FROM projectos
+      `);
+
+    // Projectos por fileira
+    const byFileiraResult = await pool.request()
+      .query(`
+        SELECT fileira, COUNT(*) as count, SUM(investimento_usd) as investimento
+        FROM projectos
+        GROUP BY fileira
+        ORDER BY count DESC
+      `);
+
+    res.json({
+      ...result.recordset[0],
+      por_fileira: byFileiraResult.recordset
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/projectos/:id - Obter detalhes de um projecto
 app.get('/api/projectos/:id', async (req, res) => {
   const { id } = req.params;
@@ -1065,41 +1121,6 @@ app.get('/api/projectos/:id', async (req, res) => {
   }
 });
 
-// GET /api/projectos/estatisticas - Estatísticas dos projectos
-app.get('/api/projectos/estatisticas', async (req, res) => {
-  try {
-    const pool = await poolPromise;
-    const result = await pool.request()
-      .query(`
-        SELECT 
-          COUNT(*) as total_projectos,
-          SUM(investimento_usd) as investimento_total,
-          SUM(hectares) as hectares_total,
-          SUM(produtores_capacitar) as produtores_total,
-          SUM(capacidade_anual_t) as capacidade_total,
-          COUNT(CASE WHEN status = 'em_execucao' THEN 1 END) as projectos_em_execucao,
-          COUNT(CASE WHEN status = 'concluido' THEN 1 END) as projectos_concluidos,
-          COUNT(CASE WHEN status = 'em_planeamento' THEN 1 END) as projectos_em_planeamento
-        FROM projectos
-      `);
-    
-    // Projectos por fileira
-    const byFileiraResult = await pool.request()
-      .query(`
-        SELECT fileira, COUNT(*) as count, SUM(investimento_usd) as investimento
-        FROM projectos 
-        GROUP BY fileira 
-        ORDER BY count DESC
-      `);
-    
-    res.json({
-      ...result.recordset[0],
-      por_fileira: byFileiraResult.recordset
-    });
-  } catch (err) { 
-    res.status(500).json({ error: err.message }); 
-  }
-});
 
 // ── Serve static files ───────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

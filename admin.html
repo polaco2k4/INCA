@@ -591,6 +591,9 @@
       <div class="nav-item" data-page="artigos">
         <span>📰</span> Artigos
       </div>
+      <div class="nav-item" data-page="fileiras">
+        <span>🌱</span> Fileiras
+      </div>
       <div class="nav-item" data-page="projectos">
         <span>📁</span> Projectos
       </div>
@@ -599,6 +602,9 @@
       </div>
       <div class="nav-item" data-page="faq">
         <span>❓</span> FAQ
+      </div>
+      <div class="nav-item" data-page="kpis">
+        <span>📊</span> KPIs Homepage
       </div>
       <div class="nav-item" data-page="logs">
         <span>📝</span> Logs de Atividade
@@ -800,7 +806,44 @@
       </div>
     </div>
 
+    <!-- FILEIRAS -->
+    <div id="pageFileiras" class="page hidden">
+      <div class="page-header">
+        <h1>Gestão de Fileiras</h1>
+        <p>Criar e gerir as fileiras agrícolas do portal</p>
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <button class="btn btn-primary" onclick="showNovaFileiraModal()">+ Nova Fileira</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Fileiras Activas</h2>
+        </div>
+        <div class="card-body">
+          <div id="loadingFileiras" class="loading">
+            <div class="spinner"></div>
+            <p>A carregar...</p>
+          </div>
+          <div id="tableFileiras" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- PROJECTOS -->
+    <!-- KPIs HOMEPAGE -->
+    <div id="pageKpis" class="page hidden">
+      <div class="page-header">
+        <h1>KPIs da Homepage</h1>
+        <p>Actualizar os números exibidos na secção de estatísticas do site</p>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div id="loadingKpis" class="loading"><div class="spinner"></div><p>A carregar...</p></div>
+          <div id="tableKpis" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="pageProjectos" class="page hidden">
       <div class="page-header">
         <h1>Gestão de Projectos</h1>
@@ -1095,6 +1138,127 @@
   </div>
 </div>
 
+<!-- MODAL FILEIRA -->
+<div id="modalFileira" class="modal hidden">
+  <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-header">
+      <h3 id="modalFileiraTitle">Nova Fileira</h3>
+    </div>
+    <div class="modal-body">
+      <form id="formFileira">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Nome (PT) *</label>
+            <input type="text" id="fileiraNomePt" required placeholder="Ex: Café">
+          </div>
+          <div class="form-group">
+            <label>Name (EN) *</label>
+            <input type="text" id="fileiraNomeEn" placeholder="Ex: Coffee">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Nome Latino</label>
+            <input type="text" id="fileiraNomeLatin" placeholder="Ex: Coffea robusta / arabica">
+          </div>
+          <div class="form-group">
+            <label>Ícone (emoji)</label>
+            <input type="text" id="fileiraIcone" placeholder="☕" maxlength="4" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 1.25rem; text-align: center;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Descrição Curta (PT)</label>
+            <textarea id="fileiraDescricaoPt" rows="3" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" placeholder="Breve descrição para o card público"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Short Description (EN)</label>
+            <textarea id="fileiraDescricaoEn" rows="3" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" placeholder="Brief description for the public card"></textarea>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Descrição Detalhada (PT)</label>
+            <textarea id="fileiraDetalhadaPt" rows="5" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" placeholder="Texto completo para o modal &quot;Saber mais&quot;"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Detailed Description (EN)</label>
+            <textarea id="fileiraDetalhadaEn" rows="5" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-family: inherit;" placeholder="Full text for the &quot;Learn more&quot; modal"></textarea>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Stat 1 — Valor</label>
+            <input type="text" id="fileiraStat1Valor" placeholder="Ex: 12k t" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Stat 1 — Etiqueta (PT)</label>
+            <input type="text" id="fileiraStat1LabelPt" placeholder="Ex: Produção Anual" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Stat 1 — Label (EN)</label>
+            <input type="text" id="fileiraStat1LabelEn" placeholder="Ex: Annual Output" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Stat 2 — Valor</label>
+            <input type="text" id="fileiraStat2Valor" placeholder="Ex: 3" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Stat 2 — Etiqueta (PT)</label>
+            <input type="text" id="fileiraStat2LabelPt" placeholder="Ex: Regiões Principais" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Stat 2 — Label (EN)</label>
+            <input type="text" id="fileiraStat2LabelEn" placeholder="Ex: Key Regions" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Províncias (separadas por vírgula)</label>
+            <input type="text" id="fileiraProvincias" placeholder="Ex: Uíge,Kwanza Norte,Malanje" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Mercados (separados por vírgula)</label>
+            <input type="text" id="fileiraMercados" placeholder="Ex: Europa,Ásia,China" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Cor do Tema</label>
+            <input type="color" id="fileiraCorTema" value="#C49A3C" style="width: 100%; height: 38px; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>Ordem</label>
+            <input type="number" id="fileiraOrdem" value="0" min="0" style="width: 100%; padding: .75rem; border: 1px solid var(--gray-300); border-radius: 6px;">
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <div style="padding-top: 8px;">
+              <label style="font-weight: normal;">
+                <input type="checkbox" id="fileiraActivo" checked style="width: auto; margin-right: .5rem;">
+                Fileira activa
+              </label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeFileiraModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarFileira()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PROJECTO -->
 <div id="modalProjecto" class="modal hidden">
   <div class="modal-content" style="max-width: 800px;">
@@ -1267,6 +1431,29 @@ const API_BASE = window.location.origin + '/api/admin';
 let token = localStorage.getItem('admin_token');
 let currentAdmin = null;
 
+// Corrige texto UTF-8 armazenado como bytes Latin-1/Windows-1252 no SQL Server
+function fixUtf8(str) {
+  if (!str || typeof str !== 'string') return str;
+  const w1252 = {
+    0x20AC:0x80,0x201A:0x82,0x0192:0x83,0x201E:0x84,0x2026:0x85,
+    0x2020:0x86,0x2021:0x87,0x02C6:0x88,0x2030:0x89,0x0160:0x8A,
+    0x2039:0x8B,0x0152:0x8C,0x017D:0x8E,0x2018:0x91,0x2019:0x92,
+    0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,
+    0x02DC:0x98,0x2122:0x99,0x0161:0x9A,0x203A:0x9B,0x0153:0x9C,
+    0x017E:0x9E,0x0178:0x9F
+  };
+  try {
+    const bytes = new Uint8Array(str.length);
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+      if (code < 0x100) { bytes[i] = code; }
+      else if (w1252[code] !== undefined) { bytes[i] = w1252[code]; }
+      else { return str; }
+    }
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch(e) { return str; }
+}
+
 // ══════════════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════════════
@@ -1338,10 +1525,12 @@ document.querySelectorAll('.nav-item').forEach(item => {
     else if (page === 'certificados') loadCertificados();
     else if (page === 'apoios') loadApoios();
     else if (page === 'artigos') loadArtigos();
+    else if (page === 'fileiras') loadFileiras();
     else if (page === 'projectos') loadProjectos();
     else if (page === 'anuncios') loadAnuncios();
     else if (page === 'faq') loadFaq();
     else if (page === 'logs') loadLogs();
+    else if (page === 'kpis') loadKpis();
   });
 });
 
@@ -1426,10 +1615,10 @@ async function loadProdutores() {
          <button class="btn btn-danger btn-sm" onclick="rejeitarProdutor(${p.id})">Rejeitar</button>`;
 
       html += `<tr>
-        <td><strong>${p.nome}</strong></td>
+        <td><strong>${fixUtf8(p.nome)}</strong></td>
         <td>${p.nbi}</td>
-        <td>${p.provincia || '-'}</td>
-        <td>${p.fileira || '-'}</td>
+        <td>${fixUtf8(p.provincia) || '-'}</td>
+        <td>${fixUtf8(p.fileira) || '-'}</td>
         <td>${p.area_ha || '-'}</td>
         <td>${statusBadge}</td>
         <td>${new Date(p.criado_em).toLocaleDateString('pt-PT')}</td>
@@ -1515,10 +1704,10 @@ async function loadCertificados() {
     data.certificados.forEach(c => {
       html += `<tr>
         <td><strong>${c.referencia}</strong></td>
-        <td>${c.produtor_nome || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
-        <td>${c.produto}</td>
+        <td>${fixUtf8(c.produtor_nome) || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
+        <td>${fixUtf8(c.produto)}</td>
         <td>${c.quantidade_kg.toLocaleString('pt-PT')}</td>
-        <td>${c.pais_destino}</td>
+        <td>${fixUtf8(c.pais_destino)}</td>
         <td>${new Date(c.criado_em).toLocaleDateString('pt-PT')}</td>
         <td class="actions">
           <button class="btn btn-primary btn-sm" style="background: var(--primary); color: white;" onclick="viewCertificadoAdmin('${c.referencia}')">Ver</button>
@@ -1688,10 +1877,10 @@ async function loadCertificadosEmitidos() {
     data.certificados.forEach(c => {
       html += `<tr>
         <td><strong>${c.referencia}</strong></td>
-        <td>${c.produtor_nome || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
-        <td>${c.produto}</td>
+        <td>${fixUtf8(c.produtor_nome) || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
+        <td>${fixUtf8(c.produto)}</td>
         <td>${c.quantidade_kg.toLocaleString('pt-PT')}</td>
-        <td>${c.pais_destino}</td>
+        <td>${fixUtf8(c.pais_destino)}</td>
         <td>${new Date(c.data_exportacao).toLocaleDateString('pt-PT')}</td>
         <td>${new Date(c.criado_em).toLocaleDateString('pt-PT')}</td>
         <td class="actions">
@@ -1729,11 +1918,11 @@ async function loadCertificadosRejeitados() {
     data.certificados.forEach(c => {
       html += `<tr>
         <td><strong>${c.referencia}</strong></td>
-        <td>${c.produtor_nome || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
-        <td>${c.produto}</td>
+        <td>${fixUtf8(c.produtor_nome) || '-'}<br><small>${c.produtor_nbi || ''}</small></td>
+        <td>${fixUtf8(c.produto)}</td>
         <td>${c.quantidade_kg.toLocaleString('pt-PT')}</td>
-        <td>${c.pais_destino}</td>
-        <td>${c.observacoes || '-'}</td>
+        <td>${fixUtf8(c.pais_destino)}</td>
+        <td>${fixUtf8(c.observacoes) || '-'}</td>
         <td>${new Date(c.criado_em).toLocaleDateString('pt-PT')}</td>
         <td class="actions">
           <button class="btn btn-primary btn-sm" onclick="viewCertificadoAdmin('${c.referencia}')">Ver</button>
@@ -1774,9 +1963,9 @@ async function loadApoios() {
     data.apoios.forEach(a => {
       html += `<tr>
         <td><strong>${a.referencia}</strong></td>
-        <td>${a.produtor_nome || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
-        <td>${a.tipo}</td>
-        <td>${a.fileira}</td>
+        <td>${fixUtf8(a.produtor_nome) || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
+        <td>${fixUtf8(a.tipo)}</td>
+        <td>${fixUtf8(a.fileira)}</td>
         <td>${a.valor_estimado ? a.valor_estimado.toLocaleString('pt-PT') + ' AOA' : '-'}</td>
         <td>${new Date(a.criado_em).toLocaleDateString('pt-PT')}</td>
         <td class="actions">
@@ -1866,11 +2055,11 @@ async function loadApoiosAprovados() {
     data.apoios.forEach(a => {
       html += `<tr>
         <td><strong>${a.referencia}</strong></td>
-        <td>${a.produtor_nome || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
-        <td>${a.tipo}</td>
-        <td>${a.fileira}</td>
+        <td>${fixUtf8(a.produtor_nome) || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
+        <td>${fixUtf8(a.tipo)}</td>
+        <td>${fixUtf8(a.fileira)}</td>
         <td>${a.valor_estimado ? a.valor_estimado.toLocaleString('pt-PT') + ' AOA' : '-'}</td>
-        <td>${a.descricao ? a.descricao.substring(0, 50) + '...' : '-'}</td>
+        <td>${a.descricao ? fixUtf8(a.descricao).substring(0, 50) + '...' : '-'}</td>
         <td>${new Date(a.criado_em).toLocaleDateString('pt-PT')}</td>
       </tr>`;
     });
@@ -1904,11 +2093,11 @@ async function loadApoiosRejeitados() {
     data.apoios.forEach(a => {
       html += `<tr>
         <td><strong>${a.referencia}</strong></td>
-        <td>${a.produtor_nome || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
-        <td>${a.tipo}</td>
-        <td>${a.fileira}</td>
+        <td>${fixUtf8(a.produtor_nome) || '-'}<br><small>${a.produtor_nbi || ''}</small></td>
+        <td>${fixUtf8(a.tipo)}</td>
+        <td>${fixUtf8(a.fileira)}</td>
         <td>${a.valor_estimado ? a.valor_estimado.toLocaleString('pt-PT') + ' AOA' : '-'}</td>
-        <td>${a.descricao ? a.descricao.substring(0, 50) + '...' : '-'}</td>
+        <td>${a.descricao ? fixUtf8(a.descricao).substring(0, 50) + '...' : '-'}</td>
         <td>${new Date(a.criado_em).toLocaleDateString('pt-PT')}</td>
       </tr>`;
     });
@@ -1947,10 +2136,10 @@ async function loadLogs() {
       const date = new Date(l.criado_em);
       html += `<tr>
         <td>${date.toLocaleDateString('pt-PT')} ${date.toLocaleTimeString('pt-PT')}</td>
-        <td>${l.admin_nome}<br><small>${l.admin_email}</small></td>
+        <td>${fixUtf8(l.admin_nome)}<br><small>${l.admin_email}</small></td>
         <td><strong>${l.acao}</strong></td>
         <td>${l.entidade} #${l.entidade_id || '-'}</td>
-        <td>${l.detalhes || '-'}</td>
+        <td>${fixUtf8(l.detalhes) || '-'}</td>
       </tr>`;
     });
 
@@ -1999,8 +2188,8 @@ async function loadArtigos() {
     artigos.artigos.forEach(a => {
       const estadoBadge = a.estado === 'publicado' ? 'badge-active' : a.estado === 'rascunho' ? 'badge-pending' : 'badge-inactive';
       html += `<tr>
-        <td><strong>${a.titulo}</strong></td>
-        <td>${a.categoria_nome || '-'}</td>
+        <td><strong>${fixUtf8(a.titulo)}</strong></td>
+        <td>${fixUtf8(a.categoria_nome) || '-'}</td>
         <td><span class="badge-status ${estadoBadge}">${a.estado}</span></td>
         <td>${a.destaque ? '⭐' : '-'}</td>
         <td>${a.visualizacoes || 0}</td>
@@ -2138,11 +2327,11 @@ async function loadAnuncios() {
       const periodo = `${new Date(a.data_inicio).toLocaleDateString('pt-PT')} - ${a.data_fim ? new Date(a.data_fim).toLocaleDateString('pt-PT') : '∞'}`;
       
       html += `<tr>
-        <td><strong>${a.titulo}</strong></td>
+        <td><strong>${fixUtf8(a.titulo)}</strong></td>
         <td><span style="color: ${tipoColor}; font-weight: 600;">${a.tipo}</span></td>
         <td><span class="badge-status ${a.activo ? 'badge-active' : 'badge-inactive'}">${a.activo ? 'Activo' : 'Inactivo'}</span></td>
         <td><small>${periodo}</small></td>
-        <td>${a.criado_por_nome || '-'}</td>
+        <td>${fixUtf8(a.criado_por_nome) || '-'}</td>
         <td class="actions">
           <button class="btn btn-sm" style="background: var(--info); color: white;" onclick="editarAnuncio(${a.id})">Editar</button>
           <button class="btn btn-danger btn-sm" onclick="eliminarAnuncio(${a.id})">Eliminar</button>
@@ -2282,8 +2471,8 @@ async function loadFaq() {
     data.faq.forEach(f => {
       html += `<tr>
         <td>${f.ordem}</td>
-        <td><strong>${f.pergunta}</strong><br><small>${f.resposta.substring(0, 100)}...</small></td>
-        <td>${f.categoria || '-'}</td>
+        <td><strong>${fixUtf8(f.pergunta)}</strong><br><small>${fixUtf8(f.resposta).substring(0, 100)}...</small></td>
+        <td>${fixUtf8(f.categoria) || '-'}</td>
         <td><span class="badge-status ${f.activo ? 'badge-active' : 'badge-inactive'}">${f.activo ? 'Activo' : 'Inactivo'}</span></td>
         <td class="actions">
           <button class="btn btn-sm" style="background: var(--info); color: white;" onclick="editarFaq(${f.id})">Editar</button>
@@ -2397,14 +2586,19 @@ async function loadProjectos() {
     html += '</tr></thead><tbody>';
 
     data.projectos.forEach(p => {
-      const statusClass = p.status === 'em_execucao' ? 'badge-active' : 
-                         p.status === 'concluido' ? 'badge-emitted' : 
+      const _nome    = fixUtf8(p.nome);
+      const _desc    = fixUtf8(p.descricao);
+      const _fileira = fixUtf8(p.fileira);
+      const _coord   = fixUtf8(p.coordenador);
+      const _emoji   = fixUtf8(p.logo_emoji);
+      const statusClass = p.status === 'em_execucao' ? 'badge-active' :
+                         p.status === 'concluido' ? 'badge-emitted' :
                          p.status === 'em_planeamento' ? 'badge-pending' : 'badge-inactive';
-      
+
       html += `<tr>
-        <td><strong>${p.logo_emoji || '📋'} ${p.nome}</strong><br><small>${p.descricao.substring(0, 100)}...</small></td>
-        <td>${p.fileira || '-'}</td>
-        <td>${p.coordenador || '-'}</td>
+        <td><strong>${_emoji || '📋'} ${_nome}</strong><br><small>${_desc.substring(0, 100)}...</small></td>
+        <td>${_fileira || '-'}</td>
+        <td>${_coord || '-'}</td>
         <td><span class="badge-status ${statusClass}">${p.status.replace('_', ' ').charAt(0).toUpperCase() + p.status.replace('_', ' ').slice(1)}</span></td>
         <td>${p.ano_inicio || '-'}</td>
         <td>${p.ano_conclusao || '-'}</td>
@@ -2442,9 +2636,9 @@ async function editarProjecto(id) {
     editingProjectoId = id;
     
     document.getElementById('modalProjectoTitle').textContent = 'Editar Projecto';
-    document.getElementById('projectoNome').value = projecto.nome || '';
+    document.getElementById('projectoNome').value = fixUtf8(projecto.nome || '');
     document.getElementById('projectoNomeEn').value = projecto.nome_en || '';
-    document.getElementById('projectoDescricao').value = projecto.descricao || '';
+    document.getElementById('projectoDescricao').value = fixUtf8(projecto.descricao || '');
     document.getElementById('projectoDescricaoEn').value = projecto.descricao_en || '';
     document.getElementById('projectoFileira').value = projecto.fileira || '';
     document.getElementById('projectoInvestimento').value = projecto.investimento_usd || '';
@@ -2454,13 +2648,13 @@ async function editarProjecto(id) {
     document.getElementById('projectoEstado').value = projecto.status || 'em_planeamento';
     document.getElementById('projectoAnoInicio').value = projecto.ano_inicio || '';
     document.getElementById('projectoAnoConclusao').value = projecto.ano_conclusao || '';
-    document.getElementById('projectoCoordenador').value = projecto.coordenador || '';
+    document.getElementById('projectoCoordenador').value = fixUtf8(projecto.coordenador || '');
     document.getElementById('projectoTelefone').value = projecto.telefone_coordenador || '';
     document.getElementById('projectoEmail').value = projecto.email_coordenador || '';
-    document.getElementById('projectoProvincias').value = projecto.provincias || '';
-    document.getElementById('projectoTecnologias').value = projecto.tecnologias || '';
-    document.getElementById('projectoMercados').value = projecto.mercados_exportacao || '';
-    document.getElementById('projectoEmoji').value = projecto.logo_emoji || '📋';
+    document.getElementById('projectoProvincias').value = fixUtf8(projecto.provincias || '');
+    document.getElementById('projectoTecnologias').value = fixUtf8(projecto.tecnologias || '');
+    document.getElementById('projectoMercados').value = fixUtf8(projecto.mercados_exportacao || '');
+    document.getElementById('projectoEmoji').value = fixUtf8(projecto.logo_emoji || '📋');
     document.getElementById('projectoCor').value = projecto.cor_tema || '#C49A3C';
     
     resetFotoUI();
@@ -2697,6 +2891,235 @@ async function uploadPendingFotos(projectoId) {
     try { msg = JSON.parse(text).error || msg; } catch (_) {}
     throw new Error(msg);
   }
+}
+
+// ══════════════════════════════════════════════════════════
+//  FILEIRAS
+// ══════════════════════════════════════════════════════════
+
+let editingFileiraId = null;
+
+// ══════════════════════════════════════════════════════════
+//  KPIs HOMEPAGE
+// ══════════════════════════════════════════════════════════
+
+async function loadKpis() {
+  const container = document.getElementById('tableKpis');
+  const loading   = document.getElementById('loadingKpis');
+  loading.classList.remove('hidden');
+  container.classList.add('hidden');
+
+  try {
+    const data = await apiCall('/kpis');
+    loading.classList.add('hidden');
+
+    let html = '<table style="width:100%;border-collapse:collapse;">';
+    html += '<thead><tr style="background:var(--gray-100);">';
+    html += '<th style="padding:.75rem 1rem;text-align:left;">Chave</th>';
+    html += '<th style="padding:.75rem 1rem;text-align:left;">Valor</th>';
+    html += '<th style="padding:.75rem 1rem;text-align:left;">Sufixo (k / M)</th>';
+    html += '<th style="padding:.75rem 1rem;text-align:left;">Label PT</th>';
+    html += '<th style="padding:.75rem 1rem;text-align:left;">Label EN</th>';
+    html += '<th style="padding:.75rem 1rem;text-align:center;">Ação</th>';
+    html += '</tr></thead><tbody>';
+
+    data.kpis.forEach(k => {
+      html += `<tr style="border-bottom:1px solid var(--gray-200);">
+        <td style="padding:.75rem 1rem;font-weight:600;color:var(--primary);">${k.chave}</td>
+        <td style="padding:.75rem 1rem;"><input id="kpi-val-${k.chave}" type="number" value="${k.valor_num}" style="width:120px;padding:.4rem;border:1px solid var(--gray-300);border-radius:4px;"></td>
+        <td style="padding:.75rem 1rem;"><input id="kpi-sfx-${k.chave}" type="text" value="${k.sufixo || ''}" placeholder="k, M ou vazio" style="width:80px;padding:.4rem;border:1px solid var(--gray-300);border-radius:4px;"></td>
+        <td style="padding:.75rem 1rem;"><input id="kpi-lpt-${k.chave}" type="text" value="${fixUtf8(k.label_pt)}" style="width:220px;padding:.4rem;border:1px solid var(--gray-300);border-radius:4px;"></td>
+        <td style="padding:.75rem 1rem;"><input id="kpi-len-${k.chave}" type="text" value="${fixUtf8(k.label_en)}" style="width:220px;padding:.4rem;border:1px solid var(--gray-300);border-radius:4px;"></td>
+        <td style="padding:.75rem 1rem;text-align:center;">
+          <button class="btn btn-primary btn-sm" onclick="salvarKpi('${k.chave}')">Guardar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color:var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+async function salvarKpi(chave) {
+  const valor_num = document.getElementById('kpi-val-' + chave).value;
+  const sufixo    = document.getElementById('kpi-sfx-' + chave).value.trim() || null;
+  const label_pt  = document.getElementById('kpi-lpt-' + chave).value.trim();
+  const label_en  = document.getElementById('kpi-len-' + chave).value.trim();
+
+  try {
+    await apiCall('/kpis/' + chave, {
+      method: 'PUT',
+      body: JSON.stringify({ valor_num: parseFloat(valor_num), sufixo, label_pt, label_en })
+    });
+    alert('KPI "' + chave + '" actualizado com sucesso!');
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function loadFileiras() {
+  const container = document.getElementById('tableFileiras');
+  const loading   = document.getElementById('loadingFileiras');
+
+  loading.classList.remove('hidden');
+  container.classList.add('hidden');
+  container.innerHTML = '';
+
+  try {
+    const data = await apiCall('/fileiras');
+    loading.classList.add('hidden');
+
+    if (!data.fileiras || data.fileiras.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhuma fileira encontrada</p></div>';
+      container.classList.remove('hidden');
+      return;
+    }
+
+    let html = '<div class="table-container"><table><thead><tr>';
+    html += '<th>Ordem</th><th>Ícone</th><th>Nome (PT / EN)</th><th>Stats</th><th>Estado</th><th>Ações</th>';
+    html += '</tr></thead><tbody>';
+
+    data.fileiras.forEach(f => {
+      const estadoBadge = f.activo
+        ? '<span class="badge-status badge-active">Activa</span>'
+        : '<span class="badge-status badge-pending">Inactiva</span>';
+
+      const stat1 = f.stat1_valor
+        ? `<strong>${fixUtf8(f.stat1_valor)}</strong> ${fixUtf8(f.stat1_label_pt || '')}`
+        : '—';
+      const stat2 = f.stat2_valor
+        ? `<strong>${fixUtf8(f.stat2_valor)}</strong> ${fixUtf8(f.stat2_label_pt || '')}`
+        : '—';
+
+      html += `<tr>
+        <td>${f.ordem}</td>
+        <td style="font-size:1.5rem;text-align:center;">${f.icone || '🌿'}</td>
+        <td>
+          <strong>${fixUtf8(f.nome_pt)}</strong><br>
+          <span style="color:var(--gray-500);font-size:.8rem;">${fixUtf8(f.nome_en)}</span>
+          ${f.nome_latin ? `<br><em style="color:var(--gray-400);font-size:.75rem;">${fixUtf8(f.nome_latin)}</em>` : ''}
+        </td>
+        <td style="font-size:.8rem;">${stat1}<br>${stat2}</td>
+        <td>${estadoBadge}</td>
+        <td class="actions">
+          <button class="btn btn-primary btn-sm" onclick="editarFileira(${f.id})">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarFileira(${f.id})">Eliminar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  } catch (err) {
+    loading.innerHTML = `<p style="color: var(--danger);">Erro: ${err.message}</p>`;
+  }
+}
+
+function showNovaFileiraModal() {
+  editingFileiraId = null;
+  document.getElementById('modalFileiraTitle').textContent = 'Nova Fileira';
+  document.getElementById('formFileira').reset();
+  document.getElementById('fileiraCorTema').value = '#C49A3C';
+  document.getElementById('fileiraOrdem').value = '0';
+  document.getElementById('fileiraActivo').checked = true;
+  document.getElementById('modalFileira').classList.remove('hidden');
+}
+
+async function editarFileira(id) {
+  try {
+    const data = await apiCall('/fileiras');
+    const f = (data.fileiras || []).find(x => x.id === id);
+    if (!f) { alert('Fileira não encontrada.'); return; }
+
+    editingFileiraId = id;
+    document.getElementById('modalFileiraTitle').textContent = 'Editar Fileira';
+
+    document.getElementById('fileiraNomePt').value         = f.nome_pt               || '';
+    document.getElementById('fileiraNomeEn').value         = f.nome_en               || '';
+    document.getElementById('fileiraNomeLatin').value      = f.nome_latin            || '';
+    document.getElementById('fileiraIcone').value          = f.icone                 || '🌿';
+    document.getElementById('fileiraDescricaoPt').value    = f.descricao_pt          || '';
+    document.getElementById('fileiraDescricaoEn').value    = f.descricao_en          || '';
+    document.getElementById('fileiraDetalhadaPt').value    = f.descricao_detalhada_pt|| '';
+    document.getElementById('fileiraDetalhadaEn').value    = f.descricao_detalhada_en|| '';
+    document.getElementById('fileiraStat1Valor').value     = f.stat1_valor           || '';
+    document.getElementById('fileiraStat1LabelPt').value   = f.stat1_label_pt        || '';
+    document.getElementById('fileiraStat1LabelEn').value   = f.stat1_label_en        || '';
+    document.getElementById('fileiraStat2Valor').value     = f.stat2_valor           || '';
+    document.getElementById('fileiraStat2LabelPt').value   = f.stat2_label_pt        || '';
+    document.getElementById('fileiraStat2LabelEn').value   = f.stat2_label_en        || '';
+    document.getElementById('fileiraProvincias').value     = f.provincias            || '';
+    document.getElementById('fileiraMercados').value       = f.mercados              || '';
+    document.getElementById('fileiraCorTema').value        = f.cor_tema              || '#C49A3C';
+    document.getElementById('fileiraOrdem').value          = f.ordem != null ? f.ordem : 0;
+    document.getElementById('fileiraActivo').checked       = !!f.activo;
+
+    document.getElementById('modalFileira').classList.remove('hidden');
+  } catch (err) {
+    alert('Erro ao carregar fileira: ' + err.message);
+  }
+}
+
+async function salvarFileira() {
+  const nomePt = document.getElementById('fileiraNomePt').value.trim();
+  if (!nomePt) { alert('Nome em português é obrigatório.'); return; }
+
+  const body = {
+    nome_pt:                nomePt,
+    nome_en:                document.getElementById('fileiraNomeEn').value.trim() || nomePt,
+    nome_latin:             document.getElementById('fileiraNomeLatin').value.trim() || null,
+    icone:                  document.getElementById('fileiraIcone').value.trim() || '🌿',
+    descricao_pt:           document.getElementById('fileiraDescricaoPt').value.trim() || null,
+    descricao_en:           document.getElementById('fileiraDescricaoEn').value.trim() || null,
+    descricao_detalhada_pt: document.getElementById('fileiraDetalhadaPt').value.trim() || null,
+    descricao_detalhada_en: document.getElementById('fileiraDetalhadaEn').value.trim() || null,
+    stat1_valor:            document.getElementById('fileiraStat1Valor').value.trim() || null,
+    stat1_label_pt:         document.getElementById('fileiraStat1LabelPt').value.trim() || null,
+    stat1_label_en:         document.getElementById('fileiraStat1LabelEn').value.trim() || null,
+    stat2_valor:            document.getElementById('fileiraStat2Valor').value.trim() || null,
+    stat2_label_pt:         document.getElementById('fileiraStat2LabelPt').value.trim() || null,
+    stat2_label_en:         document.getElementById('fileiraStat2LabelEn').value.trim() || null,
+    provincias:             document.getElementById('fileiraProvincias').value.trim() || null,
+    mercados:               document.getElementById('fileiraMercados').value.trim() || null,
+    cor_tema:               document.getElementById('fileiraCorTema').value || '#C49A3C',
+    ordem:                  parseInt(document.getElementById('fileiraOrdem').value) || 0,
+    activo:                 document.getElementById('fileiraActivo').checked
+  };
+
+  try {
+    if (editingFileiraId) {
+      await apiCall(`/fileiras/${editingFileiraId}`, { method: 'PUT', body: JSON.stringify(body) });
+      alert('Fileira actualizada com sucesso!');
+    } else {
+      await apiCall('/fileiras', { method: 'POST', body: JSON.stringify(body) });
+      alert('Fileira criada com sucesso!');
+    }
+    closeFileiraModal();
+    loadFileiras();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function eliminarFileira(id) {
+  if (!confirm('Eliminar esta fileira permanentemente? Esta acção não pode ser revertida.')) return;
+  try {
+    await apiCall(`/fileiras/${id}`, { method: 'DELETE' });
+    alert('Fileira eliminada.');
+    loadFileiras();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+function closeFileiraModal() {
+  editingFileiraId = null;
+  document.getElementById('modalFileira').classList.add('hidden');
 }
 
 // ══════════════════════════════════════════════════════════

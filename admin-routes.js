@@ -1459,4 +1459,192 @@ router.delete('/media/:id', authMiddleware, requireLevel('admin', 'super_admin')
   }
 });
 
+// ════════════════════════════════════════════════════════════
+//  GESTÃO DE FILEIRAS
+// ════════════════════════════════════════════════════════════
+
+// GET /api/admin/fileiras
+router.get('/fileiras', authMiddleware, async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .query('SELECT * FROM fileiras ORDER BY ordem ASC, id ASC');
+    res.json({ fileiras: result.recordset });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/fileiras
+router.post('/fileiras', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
+  const {
+    nome_pt, nome_en, nome_latin, icone,
+    descricao_pt, descricao_en, descricao_detalhada_pt, descricao_detalhada_en,
+    stat1_valor, stat1_label_pt, stat1_label_en,
+    stat2_valor, stat2_label_pt, stat2_label_en,
+    provincias, mercados, cor_tema, ordem, activo
+  } = req.body;
+
+  if (!nome_pt)
+    return res.status(400).json({ error: 'Nome em português é obrigatório.' });
+
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('nome_pt',                sql.NVarChar, nome_pt)
+      .input('nome_en',                sql.NVarChar, nome_en || nome_pt)
+      .input('nome_latin',             sql.NVarChar, nome_latin             || null)
+      .input('icone',                  sql.NVarChar, icone                  || '🌿')
+      .input('descricao_pt',           sql.NVarChar, descricao_pt           || null)
+      .input('descricao_en',           sql.NVarChar, descricao_en           || null)
+      .input('descricao_detalhada_pt', sql.NVarChar, descricao_detalhada_pt || null)
+      .input('descricao_detalhada_en', sql.NVarChar, descricao_detalhada_en || null)
+      .input('stat1_valor',            sql.NVarChar, stat1_valor            || null)
+      .input('stat1_label_pt',         sql.NVarChar, stat1_label_pt         || null)
+      .input('stat1_label_en',         sql.NVarChar, stat1_label_en         || null)
+      .input('stat2_valor',            sql.NVarChar, stat2_valor            || null)
+      .input('stat2_label_pt',         sql.NVarChar, stat2_label_pt         || null)
+      .input('stat2_label_en',         sql.NVarChar, stat2_label_en         || null)
+      .input('provincias',             sql.NVarChar, provincias             || null)
+      .input('mercados',               sql.NVarChar, mercados               || null)
+      .input('cor_tema',               sql.NVarChar, cor_tema               || '#C49A3C')
+      .input('ordem',                  sql.Int,      ordem != null ? parseInt(ordem) : 0)
+      .input('activo',                 sql.Bit,      activo !== undefined ? (activo ? 1 : 0) : 1)
+      .query(`INSERT INTO fileiras (
+                nome_pt, nome_en, nome_latin, icone,
+                descricao_pt, descricao_en, descricao_detalhada_pt, descricao_detalhada_en,
+                stat1_valor, stat1_label_pt, stat1_label_en,
+                stat2_valor, stat2_label_pt, stat2_label_en,
+                provincias, mercados, cor_tema, ordem, activo
+              )
+              OUTPUT INSERTED.*
+              VALUES (
+                @nome_pt, @nome_en, @nome_latin, @icone,
+                @descricao_pt, @descricao_en, @descricao_detalhada_pt, @descricao_detalhada_en,
+                @stat1_valor, @stat1_label_pt, @stat1_label_en,
+                @stat2_valor, @stat2_label_pt, @stat2_label_en,
+                @provincias, @mercados, @cor_tema, @ordem, @activo
+              )`);
+
+    const fileira = result.recordset[0];
+    await logAction(req.admin.id, 'CRIAR', 'fileira', fileira.id, `Fileira "${nome_pt}" criada`, req.ip);
+
+    res.status(201).json({ success: true, fileira });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/fileiras/:id
+router.put('/fileiras/:id', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
+  const { id } = req.params;
+  const {
+    nome_pt, nome_en, nome_latin, icone,
+    descricao_pt, descricao_en, descricao_detalhada_pt, descricao_detalhada_en,
+    stat1_valor, stat1_label_pt, stat1_label_en,
+    stat2_valor, stat2_label_pt, stat2_label_en,
+    provincias, mercados, cor_tema, ordem, activo
+  } = req.body;
+
+  try {
+    const pool = await poolPromise;
+    const request = pool.request().input('id', sql.Int, parseInt(id));
+    const updates = [];
+
+    if (nome_pt               !== undefined) { updates.push('nome_pt = @nome_pt');                               request.input('nome_pt',                sql.NVarChar, nome_pt); }
+    if (nome_en               !== undefined) { updates.push('nome_en = @nome_en');                               request.input('nome_en',                sql.NVarChar, nome_en); }
+    if (nome_latin            !== undefined) { updates.push('nome_latin = @nome_latin');                         request.input('nome_latin',             sql.NVarChar, nome_latin); }
+    if (icone                 !== undefined) { updates.push('icone = @icone');                                   request.input('icone',                  sql.NVarChar, icone); }
+    if (descricao_pt          !== undefined) { updates.push('descricao_pt = @descricao_pt');                     request.input('descricao_pt',           sql.NVarChar, descricao_pt); }
+    if (descricao_en          !== undefined) { updates.push('descricao_en = @descricao_en');                     request.input('descricao_en',           sql.NVarChar, descricao_en); }
+    if (descricao_detalhada_pt!== undefined) { updates.push('descricao_detalhada_pt = @descricao_detalhada_pt'); request.input('descricao_detalhada_pt', sql.NVarChar, descricao_detalhada_pt); }
+    if (descricao_detalhada_en!== undefined) { updates.push('descricao_detalhada_en = @descricao_detalhada_en'); request.input('descricao_detalhada_en', sql.NVarChar, descricao_detalhada_en); }
+    if (stat1_valor           !== undefined) { updates.push('stat1_valor = @stat1_valor');                       request.input('stat1_valor',            sql.NVarChar, stat1_valor); }
+    if (stat1_label_pt        !== undefined) { updates.push('stat1_label_pt = @stat1_label_pt');                 request.input('stat1_label_pt',         sql.NVarChar, stat1_label_pt); }
+    if (stat1_label_en        !== undefined) { updates.push('stat1_label_en = @stat1_label_en');                 request.input('stat1_label_en',         sql.NVarChar, stat1_label_en); }
+    if (stat2_valor           !== undefined) { updates.push('stat2_valor = @stat2_valor');                       request.input('stat2_valor',            sql.NVarChar, stat2_valor); }
+    if (stat2_label_pt        !== undefined) { updates.push('stat2_label_pt = @stat2_label_pt');                 request.input('stat2_label_pt',         sql.NVarChar, stat2_label_pt); }
+    if (stat2_label_en        !== undefined) { updates.push('stat2_label_en = @stat2_label_en');                 request.input('stat2_label_en',         sql.NVarChar, stat2_label_en); }
+    if (provincias            !== undefined) { updates.push('provincias = @provincias');                         request.input('provincias',             sql.NVarChar, provincias); }
+    if (mercados              !== undefined) { updates.push('mercados = @mercados');                             request.input('mercados',               sql.NVarChar, mercados); }
+    if (cor_tema              !== undefined) { updates.push('cor_tema = @cor_tema');                             request.input('cor_tema',               sql.NVarChar, cor_tema); }
+    if (ordem                 !== undefined) { updates.push('ordem = @ordem');                                   request.input('ordem',                  sql.Int,      parseInt(ordem)); }
+    if (activo                !== undefined) { updates.push('activo = @activo');                                 request.input('activo',                 sql.Bit,      activo ? 1 : 0); }
+
+    if (updates.length === 0)
+      return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
+
+    updates.push('actualizado_em = GETDATE()');
+
+    const result = await request.query(`UPDATE fileiras SET ${updates.join(', ')} WHERE id = @id; SELECT * FROM fileiras WHERE id = @id`);
+
+    if (result.recordset.length === 0)
+      return res.status(404).json({ error: 'Fileira não encontrada.' });
+
+    const fileira = result.recordset[0];
+    await logAction(req.admin.id, 'EDITAR', 'fileira', parseInt(id), `Fileira "${fileira.nome_pt}" editada`, req.ip);
+
+    res.json({ success: true, fileira });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/fileiras/:id
+router.delete('/fileiras/:id', authMiddleware, requireLevel('super_admin'), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('id', sql.Int, parseInt(id))
+      .query('SELECT nome_pt FROM fileiras WHERE id = @id; DELETE FROM fileiras WHERE id = @id');
+
+    if (result.recordset.length === 0)
+      return res.status(404).json({ error: 'Fileira não encontrada.' });
+
+    const nome = result.recordset[0].nome_pt;
+    await logAction(req.admin.id, 'ELIMINAR', 'fileira', parseInt(id), `Fileira "${nome}" eliminada`, req.ip);
+
+    res.json({ success: true, message: 'Fileira eliminada.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+//  KPIs HOMEPAGE
+// ════════════════════════════════════════════════════════════
+
+// GET /api/admin/kpis
+router.get('/kpis', authMiddleware, async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .query('SELECT * FROM kpis_homepage ORDER BY ordem ASC');
+    res.json({ kpis: result.recordset });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PUT /api/admin/kpis/:chave
+router.put('/kpis/:chave', authMiddleware, requireLevel('admin', 'super_admin'), async (req, res) => {
+  const { chave } = req.params;
+  const { valor_num, sufixo, label_pt, label_en } = req.body;
+  try {
+    const pool = await poolPromise;
+    const updates = [];
+    const request = pool.request().input('chave', sql.NVarChar, chave);
+    if (valor_num !== undefined) { updates.push('valor_num = @valor_num'); request.input('valor_num', sql.Decimal(18, 2), parseFloat(valor_num)); }
+    if (sufixo    !== undefined) { updates.push('sufixo = @sufixo');       request.input('sufixo',    sql.NVarChar, sufixo || null); }
+    if (label_pt  !== undefined) { updates.push('label_pt = @label_pt');   request.input('label_pt',  sql.NVarChar, label_pt); }
+    if (label_en  !== undefined) { updates.push('label_en = @label_en');   request.input('label_en',  sql.NVarChar, label_en); }
+    if (updates.length === 0) return res.status(400).json({ error: 'Nenhum campo para actualizar.' });
+    updates.push('actualizado_em = GETDATE()');
+    const result = await request.query(`UPDATE kpis_homepage SET ${updates.join(', ')} WHERE chave = @chave; SELECT * FROM kpis_homepage WHERE chave = @chave`);
+    if (result.recordset.length === 0) return res.status(404).json({ error: 'KPI não encontrado.' });
+    await logAction(req.admin.id, 'EDITAR', 'kpi_homepage', null, `KPI "${chave}" actualizado`, req.ip);
+    res.json({ success: true, kpi: result.recordset[0] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;
